@@ -1,0 +1,290 @@
+---
+title: "Reporte TCI-CS"
+author: "Carlos M. Guío / Gonzalo Valdivieso"
+date: "Marzo, 2021"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float: yes
+  pdf_document: default
+  word_document:
+    toc: yes
+subtitle: 'Modelo de secuencias de paleosuelos en Cerro Seco'
+---
+
+### Los datos
+
+La base de datos está compuesta por 62 perfiles con información en diferente detalle:
+- 4 perfiles con datos completos de campo y laboratorio
+- 27 perfiles con datos de campo parciales, e.g. profundidad, nomenclatura de horizontes y color.
+- 31 perfiles con registro fotográfico.
+
+Los perfiles de suelo estudiados en detalle y en campo se utilizaron para interpretar los perfiles que solo contaban con registro fotográfico. De esta interpretación se generalizaron dos tipos de secuencias de horizontes de suelos y paleosuelos, las cuales tienen relevancia para la infiltración de agua, el soporte de la vegetación y los procesos erosivos que modelan el paisaje.
+
+```{r message=FALSE, warning=FALSE, include = FALSE}
+
+library(tidyverse)
+library(rgdal) #leer polígono
+library(sf) #manipular objetos espaciales tipo sf
+library(raster) #manipular objetos raster
+library(osmdata) #obtener datos de osm
+
+ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco/"
+
+# Cargar datos de perfiles
+hz <- read.csv(paste(ruta,"Datos/Suelos_CS_Horiz.csv", sep = ""))
+sitio <- read.csv(paste(ruta,"Datos/Suelos_CS_Sitio.csv", sep = "")) 
+hz4 <- hz[1:21,]
+head(hz4, 5)
+
+#Cargar poligono CS y transformar a sf para manipular con ggplot
+CSsp84 <- readOGR(dsn= paste(ruta,"./GIS/Poligono_Estudio/Límite_P.E-Cerro_seco_WGS84.shp", sep = ""))
+CSsf84 <- st_as_sf(CSsp84, coords = c("long", "lat"), crs = 4326) 
+
+
+# Cargar poligonos mineria 2019 y convertir a df
+min2019 <-readOGR(dsn= paste(ruta,"./GIS/Poligono_Estudio/Mineria_2019_4326.shp", sep = "")) 
+min2019sf <- st_as_sf(min2019, coords = c("long", "lat"), crs = 4326)
+
+
+# Cargar DEM y transformar a data frame para manipular con ggplot
+DEM_ras84 <- raster(x = paste(ruta,"./GIS/DEM y derivados/DEM_CerroSeco_Clipped_4326.tif", sep = ""))
+DEM_clip <- mask(DEM_ras84, min2019, inverse = TRUE)
+DEM_df_clip <- as.data.frame(DEM_clip, xy = TRUE)
+names(DEM_df_clip) <- c("long", "lat", "altitude")
+
+#Crear objeto espacial sf de sitio 
+sitio_sp84 <- sitio
+if(is.data.frame(sitio_sp84) == TRUE)coordinates(sitio_sp84) <- ~  long + lat
+proj4string(sitio_sp84) <- "+proj=longlat +datum=WGS84 +no_defs"
+sitio_sf84 <- st_as_sf(sitio_sp84, coords = c("long", "lat"),crs = 4326)
+
+#Extraer datos de elevacion y pegarlos a sf
+alt <- raster::extract(DEM_clip, sitio_sp84)
+sitio = cbind(sitio, alt)
+sitio_sf84 = cbind(sitio_sf84, alt)
+
+#Get osm data
+calles <- getbb("Bogotá")%>% 
+  opq()%>% 
+  add_osm_feature(key = "highway", 
+                  value = c("motorway", "primary", 
+                            "secondary", "tertiary",
+                            "residential", "living_street",
+                            "footway")) %>%  osmdata_sf()
+
+```
+
+
+
+### Los perfiles
+
+Los cuatro perfiles estudiados en detalle se presentan como modelos (Fig) con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje:
+
+#######
+
+Con excepción del perfil CS02, se observaron abundantes concentraciones de hierro en lo que nosotros diferenciamos como Formación Balsillas, que le dan sus característicos tonos naranjas. 
+
+En contraste, en la formación Mondoñedo, se observaron concentraciones de materia orgánica, como revestimientos de terrones, los cuales causan la coloración aparentemente negra de algunos de sus horizontes.
+#######
+
+```{r message=FALSE, warning=FALSE, include = FALSE}
+library(aqp)
+library(sf)
+
+
+#Crear colección
+depths(hz4) <- ID ~ TOPE + BASE 
+site(hz4) <- sitio
+
+#Inicializar coordenadas
+coordinates(hz4) <- ~  long + lat
+proj4string(hz4) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
+
+
+```
+
+### Las secuencias
+
+- Tipo A: La Fm. Mondoñedo, con espesores entre 0.5 a varios metros, que yace sobre roca.
+
+-	Tipo A1: El perfil CS02 es representativo de una secuencia de un único horizonte (de espesor entre 30 a 50cm) que yace sobre roca, en este caso, sobre la Fm. Plaeners. Es típica de las cimas expuestas, en sur del parque.
+
+- Tipo A2: Aparece la Fm. mondoñedo sobre roca, mostrando dos a tres horizontes horizontes típicos (A/E, Bt y ), que abarcan entre 50 y 100cm.
+
+- Tipo A3: El perfil CS01 es representativo de una secuencia potente (> 50cm) de la Formación (Fm.) Mondoñedo que yace sobre roca. La Fm.. Mondoñedo identifica en campo por la intercalación de horizontes color gris y negro. Este último tipo de horizonte se conoce comúnmente como neme y es resultado de iluviación de materia orgánica y arcilla. En la localización del levantamiento estos horizontes yacen sobre la Fm. Plaeners, pero puede ocurrir también sobre la Fm. Arenisca Dura.
+
+-	Tipo B: La Fm. Mondoñedo yace sobre la Fm. Balsillas.
+
+- Tipo B1: La Fm. Mondoñedo es muy delgada, presenta un único horizonte (<50cm).
+
+–	Tipo B2: Los perfiles CS03 y CS04 son representativo de una secuencia de -típicamente- mas de 2 horizontes de la Formación Mondoñedo, de espesor moderado a potente, que yacen sobre una secuencia potente (>100 cm), de la Fm. Balsillas. En CS03 la roca subyacente es la Fm. Plaeners. Para el perfil CS04 se desconoce el espesor de la Fm. Balsillas y la roca subyacente. 
+
+- Tipo M: Suelos no caracterizados en zonas con actividad minera.
+- Tipo O: Otros suelos no caracterizados, por ejemplo rellenos de minería.
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+library(TeachingDemos) # sublplot()
+
+#Crear inset para elevación
+x.pos <- 1:length(hz4)
+y.pos <- hz4$alt # point positions on y label
+alt_inset <- data.frame(x.pos,y.pos) # create df
+
+# Create color variables
+hz4$RGBmx <- munsell2rgb(hz4$MX_H, hz4$MX_V, hz4$MX_C)
+hz4$RGBco <-munsell2rgb(hz4$CON_H,hz4$CON_V , hz4$CON_C)
+
+plot(hz4, name = "HZ", color = "RGBmx",divide.hz=FALSE)
+
+addVolumeFraction(hz4, 'CON_POR', cex.min = 0.1, cex.max = 0.3, pch = 19, col = hz4$RGBco)
+
+subplot(plot(y.pos ~ x.pos, alt_inset, pch = 21, bg = c('#009ACD', "#00C78C","#f5564e","#f5564e"), col = "black", xlab = "", ylab = "", las = 2, xaxt = "n", cex = 1.5, cex.axis=0.6, tck=-.03)+
+        mtext("Altura (m)", line = 2.4, side=2, cex=0.75),
+        x=grconvertX(c(0,0.85), from='npc'),
+        y=grconvertY(c(-0.18,0), from='npc'),
+        pars=list( mar=c(0,0,0,0.5)+0))
+
+```
+
+### Las propiedades 
+
+En la Fig. 3 se presenta la distribución de partículas de arena, limo y arcilla, que tiene un patrón similar para las secuencias tipo B y C (esta última, de mayor ocurrencia en el parque):  un horizonte arenoso / areno-limoso superficial (A/E) que facilita la infiltración y escorrentía subsuperficial, subyacido por uno o mas horizontes arcillosos (Bt), que dificultan la infiltración a través de la matriz del suelo. El horizonte Bt mas superficial tiene un alto contenido de bases, que indican que los procesos de lixiviación -y por tanto la infiltración- son escasos. A aproximadamente 1m de profundidad se observa un horizonte duro, debido en parte a enriquecimiento de minerales estables de Fe, y con notables grietas verticales. El perfil CS03 presenta a ca. 3m de profundidad un horizonte plíntico, extremadamente duro, muy rico en Fe estable, que bloquea la infiltración.
+
+La secuencia tipo A tiene, en comparación con la secuencia tipo C, más arena y limo que arcilla a través del perfil CS01. Se observan algunos horizontes Bt delgados, ricos en arcilla, materia orgánica y bases, que dificiltan la infiltración a través de la matriz. Sin embargo, la materia orgánica cubre las caras de terrones estables de forma angular y subangular, facilitando la infiltración por macroporos. Los óxidos de hierro estables e inestables ocurren en horizontes limosos y arenosos sin formar capas endurecidas.
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+library(lattice)
+
+CShidro <- slab(hz4, fm= ID ~ ARENA + LIMO + ARCILLA + CO + Fe_DCS + DENS_AP)
+
+# Nombres para paneles
+strip_names <-c( "Arena %", "Limo %","Arcilla %","CO %","Fe -di %", "Densidad")
+
+#Crear grupos para perfiles
+CShg <- make.groups(CS01 = CShidro[CShidro$ID == "CS01",], CS02 = CShidro[CShidro$ID == "CS02",], CS03 = CShidro[CShidro$ID== "CS03",], CS04 = CShidro[CShidro$ID== "CS04",])
+
+#Edición de paneles
+sty <- list()
+sty$strip.border$col <- NA
+sty$strip.background$col <- NA
+sty$superpose.line$col <- c('#009ACD', "#00C78C","#f5564e","#f5564e")
+sty$superpose.line$lty <- c(1,1,1,2)
+sty$superpose.line$lwd <- 2.5
+sty$layout.heights$strip <-1.5
+sty$grid.pars$fontfamily <- "sans"
+
+
+xyplot(top ~ p.q50 | variable, 
+       groups = which,
+       data=CShg,
+       ylab=list(label ='Profundidad (cm)', fontsize = 9.5),
+       xlab=list(label = ""),
+       lower=CShg$p.q25, upper=CShg$p.q75, ylim=c(400,-2),
+       panel=panel.depth_function,
+       alpha=0.3,
+       sync.colors=TRUE,
+       par.settings= sty,
+       prepanel=prepanel.depth_function,
+       layout=c(6,1), 
+       strip=strip.custom(bg= NA, 
+                          par.strip.text=list(font=2, cex=0.7, col= "grey10"),
+                          factor.levels=strip_names),
+       scales=list(x=list(tick.number=3, alternating=1, relation='free', cex = 0.6), 
+                   y = list(tick.number=6)),
+       auto.key=list(columns=3, lines=TRUE, points=FALSE))
+```
+
+La Fig. 4 presenta la distribución de propiedades químicas que tienen efectos en la vegetación. La textura areno-limosa que presentan todas las secuencias en los primeros 50 cm (Fig. 3)  facilita la penetración de raíces. A esta profundidad, sin embargo, no hay buena disponibilidad de nutrientes, como lo evidencian el pH bajo, bajo contenido de materia orgánica, fósforo y baja capacidad de intercambio catiónico. La presencia de mineraloides de aluminio y sílice en mayor concentración a este nivel indica sin embargo que existen condiciones para almacenar nutrientes.
+
+Por debajo de los 50 cm las condiciones de nutrientes mejoran en varios aspectos: el pH es neutro a básico, el fósforo (al menos para la secuencia tipo A) aumenta, y la capacidad de intercambio catiónico aumenta. Estas características explican la presencia de raíces penetrando horizontes arcillosos a profundidad de 1m en algunos suelos, lo cual tiene un efecto positivo en la infiltración. 
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+library(lattice)
+
+CSbio <- slab(hz4, fm= ID ~ pH + CO + BT + P + Si_OAA + CIC)
+
+# Nombres para paneles
+strip_names <-c( "pH", "CO %","Bases cmol/kg","P ppm","Si -ox % ", "CIC")
+
+#Crear grupos para perfiles
+CSbg <- make.groups(CS01 = CSbio[CSbio$ID == "CS01",], CS02 = CSbio[CSbio$ID == "CS02",], CS03 = CSbio[CSbio$ID== "CS03",], CS04 = CSbio[CSbio$ID== "CS04",])
+
+#Edición de paneles
+sty <- list()
+sty$strip.border$col <- NA
+sty$strip.background$col <- NA
+sty$superpose.line$col <- c('#009ACD', "#00C78C","#f5564e","#f5564e")
+sty$superpose.line$lty <- c(1,1,1,2)
+sty$superpose.line$lwd <- 2.5
+sty$layout.heights$strip <-1.5
+sty$grid.pars$fontfamily <- "sans"
+
+
+xyplot(top ~ p.q50 | variable, 
+       groups = which,
+       data=CSbg,
+       ylab=list(label ='Profundidad (cm)', fontsize = 9.5),
+       xlab=list(label =""),
+       lower=CSbg$p.q25, upper=CSbg$p.q75, ylim=c(150,-2),
+       panel=panel.depth_function,
+       alpha=0.3,
+       sync.colors=TRUE,
+       par.settings= sty,
+       prepanel=prepanel.depth_function,
+       layout=c(6,1), 
+       strip=strip.custom(bg= NA, 
+                          par.strip.text=list(font=2, cex=0.8, col= "grey10"),
+                          factor.levels=strip_names),
+       scales=list(x=list(tick.number=4, alternating=1, relation='free', cex = 0.6),
+                   y = list(tick.number=3)),
+       auto.key=list(columns=3, lines=TRUE, points=FALSE))
+```
+
+La Fig. 5 presenta las propiedades que afectan la erosión.  Las partículas de tamaño limo son mas propensas a la erosión física que la arena (debido a su peso) y la arcilla (debido a su aglomeración). En este sentido, la secuencia tipo C es mas propensa a la erosión por escorrentía superficial.  El socavamiento subsuperficial ocurre por acción química en horizontes arcillosos, que se observa cuando el sodio intercambiable aumenta, la relación calcio: magnesio es menor o cercana a 2 y la conductividad eléctrica es baja. Estas condiciones se observan en varios horizontes de las secuencias A y C por debajo de 1m. El aumento de pH a esta profundidad genera un efecto desestabilizante para los coloides de arcilla, debido al incremento de cargas negativas, en la superficie de los minerales, que generan un efecto repulsivo entre partículas. 
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+library(lattice)
+
+CSero <- slab(hz4, fm= ID ~ LIMO + Na + Ca_Mg + CE + pH)
+
+# Nombres para paneles
+strip_names <-c( "Limo %", "Na cmol/Kg", "Ca:Mg","CE dS/m","pH")
+
+#Crear grupos para perfiles
+CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == "CS02",], CS03 = CSero[CSero$ID== "CS03",], CS04 = CSero[CSero$ID== "CS04",])
+
+#Edición de paneles
+sty <- list()
+sty$strip.border$col <- NA
+sty$strip.background$col <- NA
+sty$superpose.line$col <- c('#009ACD', "#00C78C","#f5564e","#f5564e")
+sty$superpose.line$lty <- c(1,1,1,2)
+sty$superpose.line$lwd <- 2.5
+sty$layout.heights$strip <-1.5
+sty$grid.pars$fontfamily <- "sans"
+
+
+xyplot(top ~ p.q50 | variable, 
+       groups = which,
+       data=CSeg,
+       ylab=list(label ='Profundidad (cm)', fontsize = 9.5),
+       xlab=list(label =""),
+       lower=CSeg$p.q25, upper=CSeg$p.q75, ylim=c(400,-2),
+       panel=panel.depth_function,
+       alpha=0.3,
+       sync.colors=TRUE,
+       par.settings= sty,
+       prepanel=prepanel.depth_function,
+       layout=c(6,1), 
+       strip=strip.custom(bg= NA, 
+                          par.strip.text=list(font=2, cex=0.8, col= "grey10"),
+                          factor.levels=strip_names),
+       scales=list(x=list(tick.number=4, alternating=1, relation='free', cex = 0.6),
+                   y = list(tick.number=6)),
+       auto.key=list(columns=3, lines=TRUE, points=FALSE))
+```
+
+`
+

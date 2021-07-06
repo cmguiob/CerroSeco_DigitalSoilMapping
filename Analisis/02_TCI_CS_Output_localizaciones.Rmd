@@ -1,5 +1,6 @@
 ---
-title: "TCI/Cerro Seco - Localizaciones"
+title: "TCI/Cerro Seco"
+subtitle: "Localizaciones suelos"
 author: "Carlos Guio"
 date: "5th of July 2021"
 always_allow_html: true
