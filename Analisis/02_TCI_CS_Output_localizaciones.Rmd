@@ -53,7 +53,7 @@ hz4 <- hz[1:21,]
 head(hz4, 5)
 
 #Cargar poligono CS y transformar a sf para manipular con ggplot
-CSsp84 <- readOGR(dsn= paste(ruta,"./GIS/Poligono_Estudio/Límite_P.E-Cerro_seco_WGS84.shp", sep = ""))
+CSsp84 <- readOGR(dsn= paste(ruta,"./GIS/Poligonos/Límite_P.E-Cerro_seco_WGS84.shp", sep = ""))
 CSsf84 <- st_as_sf(CSsp84, coords = c("long", "lat"), crs = 4326) 
 
 
