@@ -2,7 +2,9 @@
 title: "TCI/Cerro Seco - Localizaciones"
 author: "Carlos Guio"
 date: "5th of July 2021"
+always_allow_html: true
 output:
+  md_document: default
   html_document:
     theme: journal
     highlight: tango
@@ -44,7 +46,7 @@ library(sf) #manipular objetos espaciales tipo sf
 library(raster) #manipular objetos raster
 library(osmdata) #obtener datos de osm
 
-ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco/"
+ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco_GIT/"
 
 # Cargar datos de perfiles
 hz <- read.csv(paste(ruta,"Datos/Suelos_CS_Horiz.csv", sep = ""))
