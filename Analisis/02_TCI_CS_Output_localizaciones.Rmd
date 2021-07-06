@@ -54,17 +54,17 @@ hz4 <- hz[1:21,]
 head(hz4, 5)
 
 #Cargar poligono CS y transformar a sf para manipular con ggplot
-CSsp84 <- readOGR(dsn= paste(ruta,"./GIS/Poligonos/Límite_P.E-Cerro_seco_WGS84.shp", sep = ""))
+CSsp84 <- readOGR(dsn= paste(ruta,"./Datos_GIS/Poligonos/Límite_P.E-Cerro_seco_WGS84.shp", sep = ""))
 CSsf84 <- st_as_sf(CSsp84, coords = c("long", "lat"), crs = 4326) 
 
 
 # Cargar poligonos mineria 2019 y convertir a sf
-min2019 <-readOGR(dsn= paste(ruta,"./GIS/Poligonos/Mineria_2019_4326.shp", sep = "")) 
+min2019 <-readOGR(dsn= paste(ruta,"./Datos_GIS/Poligonos/Mineria_2019_4326.shp", sep = "")) 
 min2019sf <- st_as_sf(min2019, coords = c("long", "lat"), crs = 4326)
 
 
 # Cargar DEM y transformar a data frame para manipular con ggplot
-DEM_ras84 <- raster(x = paste(ruta,"./GIS/DEM_derivados/DEM_CerroSeco_Clipped_4326.tif", sep = ""))
+DEM_ras84 <- raster(x = paste(ruta,"./Datos_GIS/DEM_derivados/DEM_CerroSeco_Clipped_4326.tif", sep = ""))
 DEM_clip <- mask(DEM_ras84, min2019, inverse = TRUE)
 DEM_df_clip <- as.data.frame(DEM_clip, xy = TRUE)
 names(DEM_df_clip) <- c("long", "lat", "altitude")
