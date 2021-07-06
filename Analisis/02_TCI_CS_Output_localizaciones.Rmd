@@ -4,18 +4,17 @@ author: "Carlos Guio"
 date: "5th of July 2021"
 always_allow_html: true
 output:
-  md_document: default
   html_document:
     theme: journal
     highlight: tango
+    keep_md: true
 editor_options:
   chunk_output_type: console
 ---
 
 <style type="text/css">
   body{
-  font-size: 14pt;
-  color: #595959;}
+  font-size: 14pt;}
 }
 </style>
 
