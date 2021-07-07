@@ -183,7 +183,7 @@ ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(I
                            colour = c('#DA7543','#DA7543','#4B6E8E', '#6AB6AA'),
                            face = "bold"),
                axis.ticks.x =  element_blank(),
-        panel.grid.major.y = element_line(color = "grey90", size = .4, linetype = c("13")))
+        panel.grid.major.y = element_line(color = "#c3beb8", size = .4, linetype = c("13")))
 ```
 
 <img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="85%" style="display: block; margin: auto;" />
