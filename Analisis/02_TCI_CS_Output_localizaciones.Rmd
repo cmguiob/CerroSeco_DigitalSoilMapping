@@ -8,8 +8,6 @@ output:
     theme: journal
     highlight: tango
     keep_md: true
-editor_options:
-  chunk_output_type: console
 ---
 
 <style type="text/css">
@@ -50,7 +48,7 @@ ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco_GIT/"
 # Cargar datos de perfiles
 hz <- read.csv(paste(ruta,"Datos/Suelos_CS_Horiz.csv", sep = ""))
 sitio <- read.csv(paste(ruta,"Datos/Suelos_CS_Sitio.csv", sep = "")) 
-hz4 <- hz[1:21,]
+hz4 <- hz[1:23,]
 head(hz4, 5)
 
 #Cargar poligono CS y transformar a sf para manipular con ggplot
@@ -93,7 +91,7 @@ calles <- getbb("Bogotá")%>%
 
 
 
-```{r prep, message=FALSE, warning=FALSE, echo = FALSE}
+```{r prep1, message=FALSE, warning=FALSE, include = FALSE}
 library(showtext)
 
 # Calcular centroide
@@ -256,4 +254,70 @@ ggplot() +
 ```
 
 \
+## Los perfiles
+
+Los cuatro perfiles estudiados en detalle se presentan como modelos con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje.
+
+```{r prep2, message=FALSE, warning=FALSE, echo = FALSE}
+
+library(aqp)
+
+# Create color variables
+hz4$RGBmx <- munsell2rgb(hz4$MX_H, hz4$MX_V, hz4$MX_C)
+hz4$RGBco <-munsell2rgb(hz4$CON_H,hz4$CON_V , hz4$CON_C)
+
+#Factor horizons to order
+hz_bdf <- hz4 %>%
+  dplyr::select(ID, BASE, TOPE, ESP,HZ, CON_POR, RGBmx, RGBco)%>%
+  dplyr::mutate(ID_HZ = paste(ID, HZ),
+         ID_HZ2 = factor(ID_HZ, ID_HZ))
+
+hz_jdf <-  hz4 %>%
+  dplyr::select(ID, BASE, TOPE, ESP,HZ, CON_POR, RGBmx, RGBco)%>%
+  dplyr::mutate(ID = factor(ID),
+         ID_HZ = paste(ID, HZ),
+         ID_HZ2 = factor(ID_HZ, ID_HZ))%>%
+  dplyr::mutate(CON_POR = ifelse(CON_POR == 0, 1, CON_POR),
+         n = 5*ESP*CON_POR / 100,
+         mean = 0.5*(BASE - TOPE),
+         sd = 0.1*ESP)%>%
+  dplyr::mutate(samples = pmap(.[11:13], rnorm))%>%
+  unnest(samples)
+
+# Points for jitter:
+# mean: BASE - TOPE/2, sd = x*ESP, n = 5*CON_POR*ESP/100
+# The problem with n: calculated with a multiple three rule, assuming that 1cm 
+# which is 100% saturated has 5 concentrations, i.e. the size of concentrations is 2mm
+
+head(hz_bdf, 10)
+```
+ 
+\
+ 
+```{r profiles, message=FALSE, warning=FALSE, echo = TRUE}
+
+ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
+  geom_bar(position="stack", stat="identity", width = 0.4) +
+  scale_fill_manual(values = rev(hz_bdf$RGBmx),
+                    guide = FALSE) +
+  #y: location from where jitter spreads out vertically, i,e. from the base minus half the tickness
+  geom_jitter(data = hz_jdf, aes(x = ID, y = BASE - (ESP/2)),  
+              width = 0.18, 
+              # height: how far jitter spreads out to each side, i.e. half the tickness
+              height = hz_jdf$ESP*0.5,
+              size = 0.3,
+              col = hz_jdf$RGBco,
+              shape = 16)+
+  geom_hline(yintercept = 0, col = '#f2d29b')+
+  scale_y_reverse(breaks = c(0,100,200,300,400,500), 
+                  labels=c("0", "100", "200", "300", "400", "500"))+
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(family = "robotoc",
+                           colour = c('#DA7543','#DA7543','#4B6E8E', '#6AB6AA'),
+                           face = "bold"),
+               axis.ticks.x =  element_blank(),
+        panel.grid.major.y = element_line(color = "grey90", size = .4, linetype = c("13")))
+
+
+```
 

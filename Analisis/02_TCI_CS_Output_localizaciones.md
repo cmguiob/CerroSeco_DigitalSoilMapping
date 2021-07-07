@@ -8,8 +8,6 @@ output:
     theme: journal
     highlight: tango
     keep_md: true
-editor_options:
-  chunk_output_type: console
 ---
 
 <style type="text/css">
@@ -142,4 +140,51 @@ ggplot() +
 <img src="02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png" width="85%" style="display: block; margin: auto;" />
 
 \
+## Los perfiles
+
+Los cuatro perfiles estudiados en detalle se presentan como modelos con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje.
+
+
+```
+##      ID BASE TOPE ESP  HZ CON_POR     RGBmx     RGBco    ID_HZ   ID_HZ2
+## 1  CS01   35    0  35   A       0 #6F5F4CFF #9C750FFF   CS01 A   CS01 A
+## 2  CS01   80   35  45   E       2 #83796FFF #9C750FFF   CS01 E   CS01 E
+## 3  CS01   90   80  10  Bt      80 #686057FF #38302AFF  CS01 Bt  CS01 Bt
+## 4  CS01  140   90  50 B/C      10 #83796FFF #38302AFF CS01 B/C CS01 B/C
+## 5  CS01  170  140  30 Bn1       5 #83796FFF #38302AFF CS01 Bn1 CS01 Bn1
+## 6  CS01  177  170   7 Bt1      80 #666157FF #38302AFF CS01 Bt1 CS01 Bt1
+## 7  CS01  250  177  73  C1       5 #DCA651FF #AB6D28FF  CS01 C1  CS01 C1
+## 8  CS01  280  250  30   R       0 #DEC7A6FF #AB6D28FF   CS01 R   CS01 R
+## 9  CS02   25    0  25   A       0 #725D4EFF #DCA651FF   CS02 A   CS02 A
+## 10 CS02   50   25  25   R       0 #DAC7B5FF #AB6D28FF   CS02 R   CS02 R
+```
+ 
+\
+ 
+
+```r
+ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
+  geom_bar(position="stack", stat="identity", width = 0.4) +
+  scale_fill_manual(values = rev(hz_bdf$RGBmx),
+                    guide = FALSE) +
+  #y: location from where jitter spreads out vertically, i,e. from the base minus half the tickness
+  geom_jitter(data = hz_jdf, aes(x = ID, y = BASE - (ESP/2)),  
+              width = 0.18, 
+              # height: how far jitter spreads out to each side, i.e. half the tickness
+              height = hz_jdf$ESP*0.5,
+              size = 0.3,
+              col = hz_jdf$RGBco,
+              shape = 16)+
+  geom_hline(yintercept = 0, col = '#f2d29b')+
+  scale_y_reverse(breaks = c(0,100,200,300,400,500), 
+                  labels=c("0", "100", "200", "300", "400", "500"))+
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(family = "robotoc",
+                           colour = c('#DA7543','#DA7543','#4B6E8E', '#6AB6AA'),
+                           face = "bold"),
+               axis.ticks.x =  element_blank(),
+        panel.grid.major.y = element_line(color = "grey90", size = .4, linetype = c("13")))
+```
+
+<img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="85%" style="display: block; margin: auto;" />
 
