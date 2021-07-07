@@ -1,26 +1,20 @@
 ---
-title: "Reporte TCI-CS"
-author: "Carlos M. Guío / Gonzalo Valdivieso"
-date: "Marzo, 2021"
+title: "TCI/Cerro Seco"
+subtitle: "Perfiles y propiedades"
+author: "Carlos Guio"
+date: "5th of July 2021"
 output:
   html_document:
-    df_print: paged
-    toc: yes
-    toc_float: yes
-  pdf_document: default
-  word_document:
-    toc: yes
-subtitle: 'Modelo de secuencias de paleosuelos en Cerro Seco'
+    theme: journal
+    highlight: tango
+    keep_md: true
+editor_options:
+  chunk_output_type: console
 ---
 
-### Los datos
+### Los perfiles
 
-La base de datos está compuesta por 62 perfiles con información en diferente detalle:
-- 4 perfiles con datos completos de campo y laboratorio
-- 27 perfiles con datos de campo parciales, e.g. profundidad, nomenclatura de horizontes y color.
-- 31 perfiles con registro fotográfico.
-
-Los perfiles de suelo estudiados en detalle y en campo se utilizaron para interpretar los perfiles que solo contaban con registro fotográfico. De esta interpretación se generalizaron dos tipos de secuencias de horizontes de suelos y paleosuelos, las cuales tienen relevancia para la infiltración de agua, el soporte de la vegetación y los procesos erosivos que modelan el paisaje.
+Los cuatro perfiles estudiados en detalle se presentan como modelos (Fig) con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje:
 
 ```{r message=FALSE, warning=FALSE, include = FALSE}
 
@@ -77,12 +71,7 @@ calles <- getbb("Bogotá")%>%
 ```
 
 
-
-### Los perfiles
-
-Los cuatro perfiles estudiados en detalle se presentan como modelos (Fig) con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje:
-
-#######
+##
 
 Con excepción del perfil CS02, se observaron abundantes concentraciones de hierro en lo que nosotros diferenciamos como Formación Balsillas, que le dan sus característicos tonos naranjas. 
 

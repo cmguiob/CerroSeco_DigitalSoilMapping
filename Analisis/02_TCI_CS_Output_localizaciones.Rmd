@@ -3,7 +3,6 @@ title: "TCI/Cerro Seco"
 subtitle: "Localizaciones suelos"
 author: "Carlos Guio"
 date: "5th of July 2021"
-always_allow_html: true
 output:
   html_document:
     theme: journal
