@@ -140,6 +140,7 @@ ggplot() +
 <img src="02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png" width="85%" style="display: block; margin: auto;" />
 
 \
+
 ## Los perfiles
 
 Los cuatro perfiles estudiados en detalle se presentan como modelos con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje.
@@ -163,10 +164,28 @@ Los cuatro perfiles estudiados en detalle se presentan como modelos con propieda
  
 
 ```r
+library(colorspace)
+
 ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
   geom_bar(position="stack", stat="identity", width = 0.4) +
   scale_fill_manual(values = rev(hz_bdf$RGBmx),
                     guide = FALSE) +
+  geom_text_repel( data = hz_bdf,   
+                   aes(y = BASE - (ESP/3), label = HZ),
+                   color = darken(hz_bdf$RGBmx, .2, space = "HCL"),
+                   size = 3,
+                   face = "bold",
+                   family = "robotoc",
+                   hjust = 0,
+                   direction = "y",
+                   nudge_x = 0.3,
+                   nudge_y = -3,
+                   segment.size = .5,
+                   segment.square = TRUE,
+                   segment.curvature = 0.1,
+                   segment.angle = 40,
+                   segment.alpha = 0.5,
+                   box.padding = 0.3)+
   #y: location from where jitter spreads out vertically, i,e. from the base minus half the tickness
   geom_jitter(data = hz_jdf, aes(x = ID, y = BASE - (ESP/2)),  
               width = 0.18, 
@@ -177,13 +196,14 @@ ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(I
               shape = 16)+
   geom_hline(yintercept = 0, col = '#f2d29b')+
   scale_y_reverse(breaks = c(0,100,200,300,400,500), 
-                  labels=c("0", "100", "200", "300", "400", "500"))+
+                  labels=c("0", "100", "200", "300", "400", "500\ncm"))+
   scale_x_discrete(position = "top") +
   theme(axis.text.x = element_text(family = "robotoc",
                            colour = c('#DA7543','#DA7543','#4B6E8E', '#6AB6AA'),
                            face = "bold"),
                axis.ticks.x =  element_blank(),
-        panel.grid.major.y = element_line(color = "#c3beb8", size = .4, linetype = c("13")))
+        panel.grid.major.y = element_line(color = "#c3beb8", size = .4, linetype = c("13"))) +
+  coord_cartesian(clip = "off")
 ```
 
 <img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="85%" style="display: block; margin: auto;" />
