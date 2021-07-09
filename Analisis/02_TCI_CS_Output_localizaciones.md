@@ -166,7 +166,7 @@ Los cuatro perfiles estudiados en detalle se presentan como modelos con propieda
 ```r
 library(colorspace)
 
-ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
+perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
   geom_bar(position="stack", stat="identity", width = 0.4) +
   scale_fill_manual(values = rev(hz_bdf$RGBmx),
                     guide = FALSE) +
@@ -206,5 +206,22 @@ ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(I
   coord_cartesian(clip = "off")
 ```
 
-<img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="85%" style="display: block; margin: auto;" />
+
+```r
+library(pdftools)
+```
+
+```
+## Using poppler version 21.04.0
+```
+
+```r
+#Save
+#ggsave(paste(ruta,"Perfiles.pdf", sep = ""), plot = perfiles, height = 10, width = 15, device = cairo_pdf())
+
+#pdf_convert(pdf = "Perfiles.pdf", 
+#            filenames = paste(ruta,"Perfiles.png", sep = ""),
+#            format = "png", 
+#            dpi = 300)
+```
 
