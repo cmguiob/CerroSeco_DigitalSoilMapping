@@ -204,24 +204,11 @@ perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcat
                axis.ticks.x =  element_blank(),
         panel.grid.major.y = element_line(color = "#c3beb8", size = .4, linetype = c("13"))) +
   coord_cartesian(clip = "off")
+
+perfiles
 ```
 
+<img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="85%" style="display: block; margin: auto;" />
 
-```r
-library(pdftools)
-```
 
-```
-## Using poppler version 21.04.0
-```
-
-```r
-#Save
-#ggsave(paste(ruta,"Perfiles.pdf", sep = ""), plot = perfiles, height = 10, width = 15, device = cairo_pdf())
-
-#pdf_convert(pdf = "Perfiles.pdf", 
-#            filenames = paste(ruta,"Perfiles.png", sep = ""),
-#            format = "png", 
-#            dpi = 300)
-```
 
