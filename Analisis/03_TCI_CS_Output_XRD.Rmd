@@ -1,0 +1,163 @@
+---
+title: "XRD"
+author: "Carlos Guío"
+date: "7/10/2021"
+output: html_document
+---
+
+```{r setup_chunks, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align="center", echo = FALSE, fig.width = 5)
+
+library(hrbrthemes)
+library(waffle) #gg_waffle
+library(ggplot2)
+library(ggforce) #trans_reverser
+library(tidyverse)
+library(patchwork) #plot layout
+
+```
+
+blabla
+
+```{r setup_plot}
+
+theme_set(theme_minimal(base_family = "Avenir Next Condensed"))
+
+theme_update(strip.background = element_blank(),
+             axis.title.y = element_blank(),
+             axis.text.y = element_blank(),
+             axis.ticks.y = element_blank(),
+             #spacing between figures/blocks and outer rim
+             plot.margin = margin(c(1,1,1,1)),
+             plot.background = element_rect(color = "#f6f2ed", 
+                                       fill = "#f6f2ed", 
+                                       size = 2),
+             # spacing between facets in a single block
+             panel.spacing = unit(.075, "lines")) 
+
+```
+
+
+blabla
+
+```{r prep_waffle}
+
+RIET <- readr::read_csv("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Difraccion/CS_Rietvelt.csv")
+
+RIET$mine_corto = factor(RIET$mine_corto)
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r plot_waffle, echo=FALSE}
+
+p_riet <- RIET %>%
+  filter(perfil == "CS03") %>%
+  filter(porcentaje != 0) %>%
+  ggplot() +
+  geom_waffle(aes(fill = mine_corto, values = porcentaje),
+              show.legend = FALSE,
+              size = 0.1, #lining spacing
+              color = "white",
+              flip = TRUE,
+              radius = unit(2, "pt"))+
+  coord_equal() +
+  labs(fill = NULL, colour = NULL) +
+  facet_wrap(~horizonte, ncol = 1, strip.position = "left")+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.grid = element_blank(),
+        strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0))
+
+p_riet
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r prep_dicfracto}
+
+ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco/"
+
+files_list <- list.files(path = (paste(ruta,"Datos/Difraccion/", sep = "")), pattern = ".*xy$")
+
+file_name <- paste(ruta,"Datos/Difraccion/",files_list, sep = "")
+
+sample_names <- c("CS02_A_P","CS01_Bt_P", "CS01_Bn1_P", "CS01_Bt1_P",   
+                  "CS03_A/E_P","CS03_A/E_C",  "CS03_A/E_C100", "CS03_A/E_EG", 
+                  "CS03_A/E_N","CS03_Bth_P", "CS03_Bth_C", "CS03_Bth_C100",
+                  "CS03_Bth_EG","CS03_Bth_N","CS03_Bdc2_P","CS03_Bdc2_C",
+                  "CS03_Bdc2_C100","CS03_Bdc2_EG","CS03_Bdc2_N","CS03_B/C2_P",
+                  "CS03_B/C2_C","CS03_B/C2_C100","CS03_B/C2_EG","CS03_B/C2_N",
+                  "CS03_Bv2_P", "CS03_Bv2_C", "CS03_Bv2_C100", "CS03_Bv2_EG",
+                  "CS03_Bv2_N","CS03_B2_P","CS03_B2_C","CS03_B2_C100",
+                  "CS03_B2_EG","CS03_B2_N")
+
+DRX_df <- file_name[] %>%
+          map(~ read.table(., sep = " "))%>%
+          map(~ `names<-`(., c("ttheta","I")))%>%
+         `names<-`(sample_names)             %>%
+          bind_rows(.id = "ID_HZ_T") %>%
+          separate(col = ID_HZ_T, 
+                   into = c("ID", "HZ", "TRATAMIENTO"), 
+                   sep = "_") %>%
+          mutate_at(c("ID", "HZ","TRATAMIENTO"), as_factor)
+
+#Normalize the data 
+DRX_dfs <- DRX_df %>% 
+  mutate(Is = scale(I, center = FALSE))
+
+#Calculate D for optional plotting
+braggs <- function(ttheta, l, d2r){l/(2*sin(ttheta*0.5*d2r))}
+DRX_dfs$d <- braggs(ttheta = DRX_dfs$ttheta, l = 1.541838, d2r = 0.0174532925199433)
+
+
+```
+
+
+```{r plot_difracto}
+
+DRX_CS03 <- DRX_dfs %>% dplyr::filter(ID == "CS03" & d < 19 & d > 2.2 )
+
+
+p_xrd <- ggplot() +
+  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "P"), 
+            aes(x= d, y= Is + 0.5), size = 0.5) +
+  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "N"), 
+            aes(x= d, y= Is + 2), size = 0.1) +
+  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "EG"), 
+            aes(x= d, y= Is + 3.5), size = 0.1) +
+  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "C100"), 
+            aes(x= d, y= Is + 5), size = 0.1) +
+  scale_y_continuous(limits = c(0,8))+
+  #limits in scale_x_continuous would cut the line, not plot area: avoided
+  scale_x_continuous(trans = trans_reverser('log2'), 
+                     breaks= c(3,4,5, 7,10,15), 
+                     labels = c(3,4,5,7,10,15))+
+  facet_wrap(~ HZ, ncol = 1 ) + 
+  labs(x = "d (Angstrom)")+
+  # with coord_cartesian the limits cut the plot area
+  coord_cartesian(xlim = c(17, 2.5), ylim = c(0, 7), clip = "off") +
+  theme(plot.margin = margin(40, 40, 20, 10), #top, right, bottom, left
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        strip.text = element_blank()) 
+
+p_xrd
+
+
+```
+
+```{r plt_layout}
+
+p_riet + p_xrd + plot_layout(widths = c(1, 2))
+
+```
+
+
