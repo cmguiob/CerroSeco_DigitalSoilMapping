@@ -6,12 +6,13 @@ output: html_document
 ---
 
 ```{r setup_chunks, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align="center", echo = FALSE, fig.width = 5)
+knitr::opts_chunk$set(echo = TRUE, fig.align="center", echo = FALSE, fig.width = 5.5)
 
 library(hrbrthemes)
 library(waffle) #gg_waffle
 library(ggplot2)
 library(ggforce) #trans_reverser
+library(colorspace)
 library(tidyverse)
 library(patchwork) #plot layout
 
@@ -29,11 +30,15 @@ theme_update(strip.background = element_blank(),
              axis.ticks.y = element_blank(),
              #spacing between figures/blocks and outer rim
              plot.margin = margin(c(1,1,1,1)),
-             plot.background = element_rect(color = "#f6f2ed", 
-                                       fill = "#f6f2ed", 
-                                       size = 2),
+             # "#F8F4EF" is 0.2 loghter than "#f6f2ed" 
+             plot.background = element_rect(color =  "#F8F4EF",
+                                            fill =  "#F8F4EF", 
+                                            size = 2),
              # spacing between facets in a single block
-             panel.spacing = unit(.075, "lines")) 
+             panel.spacing = unit(.1, "lines"),
+             panel.grid.major.y = element_blank(),
+             panel.grid.minor.y = element_blank(),
+             axis.title = element_text(colour = darken("#f6f2ed", 0.5, space = "HCL"))) 
 
 ```
 
@@ -73,7 +78,8 @@ p_riet <- RIET %>%
         plot.background = element_rect(fill = "white"),
         panel.grid = element_blank(),
         strip.placement = "outside",
-        strip.text.y.left = element_text(angle = 0))
+        strip.text.y.left = element_text(angle = 0, colour = darken("#f6f2ed", 0.5, space = "HCL")),
+        strip.switch.pad.wrap = unit(0.5, "lines"))
 
 p_riet
 
@@ -128,26 +134,36 @@ DRX_CS03 <- DRX_dfs %>% dplyr::filter(ID == "CS03" & d < 19 & d > 2.2 )
 
 p_xrd <- ggplot() +
   geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "P"), 
-            aes(x= d, y= Is + 0.5), size = 0.5) +
+            aes(x= d, y= Is + 0.5), 
+            size = 0.45,
+            color = darken("#f6f2ed", 0.5, space = "HCL")) +
   geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "N"), 
-            aes(x= d, y= Is + 2), size = 0.1) +
+            aes(x= d, y= Is + 2), 
+            size = 0.1,
+            color = darken("#f6f2ed", 0.5, space = "HCL")) +
   geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "EG"), 
-            aes(x= d, y= Is + 3.5), size = 0.1) +
+            aes(x= d, y= Is + 3.5), 
+            size = 0.1,
+            color = darken("#f6f2ed", 0.3, space = "HCL")) +
   geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "C100"), 
-            aes(x= d, y= Is + 5), size = 0.1) +
-  scale_y_continuous(limits = c(0,8))+
+            aes(x= d, y= Is + 5), 
+            size = 0.1,
+            color = darken("#f6f2ed", 0.2, space = "HCL")) +
+  scale_y_continuous(limits = c(0,10))+
   #limits in scale_x_continuous would cut the line, not plot area: avoided
   scale_x_continuous(trans = trans_reverser('log2'), 
                      breaks= c(3,4,5, 7,10,15), 
                      labels = c(3,4,5,7,10,15))+
   facet_wrap(~ HZ, ncol = 1 ) + 
-  labs(x = "d (Angstrom)")+
+  labs(x = "distancia entre planos (Angstrom)")+
   # with coord_cartesian the limits cut the plot area
   coord_cartesian(xlim = c(17, 2.5), ylim = c(0, 7), clip = "off") +
-  theme(plot.margin = margin(40, 40, 20, 10), #top, right, bottom, left
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        strip.text = element_blank()) 
+  theme(plot.margin = margin(50, 70, 20, 10), #top, right, bottom, left
+        panel.grid = element_line(linetype = c("dashed"),
+                                colour = darken("#f6f2ed", 0.05, space = "HCL")),
+        axis.text.x = element_text(color = darken("#f6f2ed", 0.5, space = "HCL")),
+        strip.text = element_blank(),
+        axis.title.x.bottom = element_text(margin = margin(15, 0, 0, 0))) 
 
 p_xrd
 
@@ -156,7 +172,7 @@ p_xrd
 
 ```{r plt_layout}
 
-p_riet + p_xrd + plot_layout(widths = c(1, 2))
+p_riet + p_xrd + plot_layout(widths = c(1, 3))
 
 ```
 
