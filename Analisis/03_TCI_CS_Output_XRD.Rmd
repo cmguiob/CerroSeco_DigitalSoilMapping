@@ -6,12 +6,13 @@ output: html_document
 ---
 
 ```{r setup_chunks, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align="center", echo = FALSE, fig.width = 5.5)
+knitr::opts_chunk$set(echo = TRUE, fig.align="center", warning = FALSE, echo = FALSE, fig.width = 5.5)
 
 library(hrbrthemes)
 library(waffle) #gg_waffle
 library(ggplot2)
 library(ggforce) #trans_reverser
+library(ggrepel)
 library(colorspace)
 library(tidyverse)
 library(patchwork) #plot layout
@@ -30,15 +31,17 @@ theme_update(strip.background = element_blank(),
              axis.ticks.y = element_blank(),
              #spacing between figures/blocks and outer rim
              plot.margin = margin(c(1,1,1,1)),
-             # "#F8F4EF" is 0.2 loghter than "#f6f2ed" 
-             plot.background = element_rect(color =  "#F8F4EF",
-                                            fill =  "#F8F4EF", 
+             # "#F6F1EB" is 0.8 loghter than "#c3beb8"
+             plot.background = element_rect(color =  "#F6F1EB",
+                                            fill =  "#F6F1EB", 
                                             size = 2),
              # spacing between facets in a single block
-             panel.spacing = unit(.1, "lines"),
+             panel.spacing = unit(0.02, "lines"),
              panel.grid.major.y = element_blank(),
              panel.grid.minor.y = element_blank(),
-             axis.title = element_text(colour = darken("#f6f2ed", 0.5, space = "HCL"))) 
+             axis.title = element_text(colour = darken("#c3beb8", 0.2, 
+                                                       space = "HCL"), 
+                                       face = "bold")) 
 
 ```
 
@@ -47,9 +50,15 @@ blabla
 
 ```{r prep_waffle}
 
-RIET <- readr::read_csv("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Difraccion/CS_Rietvelt.csv")
+riet <- readr::read_csv("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Difraccion/CS_Rietvelt.csv")
 
-RIET$mine_corto = factor(RIET$mine_corto)
+riet$mine_corto = factor(riet$mine_corto)
+
+riet_03  <- riet %>%
+  filter(perfil == "CS03") %>%
+  mutate(horizonte = factor(horizonte, 
+                            levels = c("A/E", "Bth", "B", "Bdc2", "B/C2", "Bv2", "B2", "R"))) %>%
+  filter(porcentaje != 0)
 
 
 ```
@@ -58,9 +67,9 @@ RIET$mine_corto = factor(RIET$mine_corto)
 
 You can also embed plots, for example:
 
-```{r plot_waffle, echo=FALSE}
+```{r plot_waffle, echo = TRUE}
 
-p_riet <- RIET %>%
+p_riet <- riet_03 %>%
   filter(perfil == "CS03") %>%
   filter(porcentaje != 0) %>%
   ggplot() +
@@ -78,10 +87,13 @@ p_riet <- RIET %>%
         plot.background = element_rect(fill = "white"),
         panel.grid = element_blank(),
         strip.placement = "outside",
-        strip.text.y.left = element_text(angle = 0, colour = darken("#f6f2ed", 0.5, space = "HCL")),
+        strip.text.y.left = element_text(colour = darken("#c3beb8", 0.2, 
+                                                       space = "HCL"), 
+                                        face = "bold",
+                                        angle = 0),
         strip.switch.pad.wrap = unit(0.5, "lines"))
 
-p_riet
+
 
 ```
 
@@ -105,68 +117,106 @@ sample_names <- c("CS02_A_P","CS01_Bt_P", "CS01_Bn1_P", "CS01_Bt1_P",
                   "CS03_Bv2_N","CS03_B2_P","CS03_B2_C","CS03_B2_C100",
                   "CS03_B2_EG","CS03_B2_N")
 
+#Calculate D for optional plotting
+braggs <- function(ttheta, l, d2r){l/(2*sin(ttheta*0.5*d2r))}
+
 DRX_df <- file_name[] %>%
           map(~ read.table(., sep = " "))%>%
           map(~ `names<-`(., c("ttheta","I")))%>%
          `names<-`(sample_names)             %>%
           bind_rows(.id = "ID_HZ_T") %>%
           separate(col = ID_HZ_T, 
-                   into = c("ID", "HZ", "TRATAMIENTO"), 
-                   sep = "_") %>%
-          mutate_at(c("ID", "HZ","TRATAMIENTO"), as_factor)
+                   into = c("ID", "HZ", "TRATAMIENTO"), sep = "_") %>%
+          mutate(I_scaled = scale(I, center = FALSE)) %>% 
+          mutate(I_plot = case_when(
+            (TRATAMIENTO == "P") ~ I_scaled + 0.5,
+            (TRATAMIENTO == "N") ~ I_scaled + 2,
+            (TRATAMIENTO == "EG") ~ I_scaled + 3.5,
+            (TRATAMIENTO == "C100") ~ I_scaled + 5)) %>% 
+          mutate(d = braggs(ttheta = ttheta, 
+                            l = 1.541838, 
+                            d2r = 0.0174532925199433)) %>%
+          mutate(ETIQUETA = case_when(
+            (HZ == "A/E" & TRATAMIENTO == "P"  & 
+               d > 2.2999 & d < 2.3002 ) ~ "Polvo",
+            (HZ == "A/E" & TRATAMIENTO == "N" &
+               d > 2.2999 & d < 2.3002) ~ "Orientada",
+            (HZ == "A/E" & TRATAMIENTO == "EG" &
+               d > 2.2999 & d < 2.3002) ~ "Etilenglicol",
+            (HZ == "A/E" & TRATAMIENTO == "C100" &
+               d > 2.2999 & d < 2.3002) ~ "Caliente"))%>%
+          mutate_at(c("ID", "HZ","TRATAMIENTO", "ETIQUETA"), as_factor)
 
-#Normalize the data 
-DRX_dfs <- DRX_df %>% 
-  mutate(Is = scale(I, center = FALSE))
 
-#Calculate D for optional plotting
-braggs <- function(ttheta, l, d2r){l/(2*sin(ttheta*0.5*d2r))}
-DRX_dfs$d <- braggs(ttheta = DRX_dfs$ttheta, l = 1.541838, d2r = 0.0174532925199433)
 
 
 ```
 
 
-```{r plot_difracto}
+```{r plot_difracto, echo = TRUE}
 
-DRX_CS03 <- DRX_dfs %>% dplyr::filter(ID == "CS03" & d < 19 & d > 2.2 )
+DRX_CS03 <- DRX_df %>% dplyr::filter(ID == "CS03" & d < 19 & d > 2.295 )
 
 
 p_xrd <- ggplot() +
-  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "P"), 
-            aes(x= d, y= Is + 0.5), 
-            size = 0.45,
-            color = darken("#f6f2ed", 0.5, space = "HCL")) +
-  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "N"), 
-            aes(x= d, y= Is + 2), 
-            size = 0.1,
-            color = darken("#f6f2ed", 0.5, space = "HCL")) +
-  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "EG"), 
-            aes(x= d, y= Is + 3.5), 
-            size = 0.1,
-            color = darken("#f6f2ed", 0.3, space = "HCL")) +
-  geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "C100"), 
-            aes(x= d, y= Is + 5), 
-            size = 0.1,
-            color = darken("#f6f2ed", 0.2, space = "HCL")) +
-  scale_y_continuous(limits = c(0,10))+
+            geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "P"), 
+                aes(x= d, y= I_plot), 
+                size = 0.45,
+                color = darken("#f6f2ed", 0.5, space = "HCL")) +
+            geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "N"), 
+                aes(x= d, y= I_plot), 
+                size = 0.1,
+                color = darken("#f6f2ed", 0.5, space = "HCL")) +
+            geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "EG"), 
+                aes(x= d, y= I_plot), 
+                size = 0.1,
+                color = darken("#f6f2ed", 0.3, space = "HCL")) +
+            geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "C100"), 
+                 aes(x= d, y= I_plot), 
+                size = 0.1,
+                color = darken("#f6f2ed", 0.2, space = "HCL")) +
+            geom_text_repel(data = DRX_CS03,
+                  aes(x = d, y = I_plot, color = TRATAMIENTO, label = ETIQUETA),
+                  size = 2.5, #font size
+                  hjust = 0,
+                  direction = "y",
+                  xlim = c(2.25, NA), #para que salgan de la gráfica
+                  ylim = c(-0.5, 60), #para que salgan de la gráfica
+                  nudge_x = 0.27,
+                  segment.size = 0.6, #segment thickness
+                  segment.curvature = -0.2, #curvature direction - for left
+                  segment.alpha = .5,
+                  segment.linetype = "dotted",
+                  #segment.ncp = 3,
+                  segment.square= FALSE,
+                  segment.inflect = TRUE,
+                  segment.angle = 10,
+                  point.padding = 0.05,
+                  box.padding = 0.18) + #If too high, labels clump
+            scale_y_continuous(limits = c(0,7), expand = c(0,0)) +
   #limits in scale_x_continuous would cut the line, not plot area: avoided
-  scale_x_continuous(trans = trans_reverser('log2'), 
+            scale_x_continuous(trans = trans_reverser('log2'), 
                      breaks= c(3,4,5, 7,10,15), 
                      labels = c(3,4,5,7,10,15))+
-  facet_wrap(~ HZ, ncol = 1 ) + 
-  labs(x = "distancia entre planos (Angstrom)")+
-  # with coord_cartesian the limits cut the plot area
-  coord_cartesian(xlim = c(17, 2.5), ylim = c(0, 7), clip = "off") +
-  theme(plot.margin = margin(50, 70, 20, 10), #top, right, bottom, left
-        panel.grid = element_line(linetype = c("dashed"),
-                                colour = darken("#f6f2ed", 0.05, space = "HCL")),
-        axis.text.x = element_text(color = darken("#f6f2ed", 0.5, space = "HCL")),
-        strip.text = element_blank(),
-        axis.title.x.bottom = element_text(margin = margin(15, 0, 0, 0))) 
-
-p_xrd
-
+            facet_wrap(~ HZ, ncol = 1 ) + 
+            labs(x = "distancia entre planos (Angstrom)")+
+            theme(
+                  plot.margin = margin(50, 70, 20, 10), #top, right, bottom, left
+                  panel.grid = element_line(
+                                  linetype = c("dashed"),
+                                  colour = darken("#f6f2ed", 
+                                                  0.05, 
+                                                  space = "HCL")),
+                  axis.text.x = element_text(
+                                  color = darken("#f6f2ed", 
+                                                 0.5, 
+                                                 space = "HCL")),
+                  strip.text = element_blank(),
+                  axis.title.x.bottom = element_text(
+                                  margin = margin(15, 0, 0, 0)),
+                  legend.position = "none") +
+                  # with coord_cartesian the limits cut the plot area
+                  coord_cartesian(xlim = c(17, 2.5), ylim = c(0, 7), clip = "off") 
 
 ```
 
