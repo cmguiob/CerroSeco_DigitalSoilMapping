@@ -61,12 +61,27 @@ blabla
 
 riet <- readr::read_csv("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Difraccion/CS_Rietvelt.csv")
 
-riet$mine_corto = factor(riet$mine_corto)
+riet <- riet %>%
+  mutate(colores = case_when(
+      mine_corto == "s" ~  "#806dac",
+      mine_corto == "i" ~  "#c581a3",
+      mine_corto == "h" | mine_corto == "hk" ~  "#9f742f",
+      mine_corto == "g" ~  "#df9d37",
+      mine_corto == "c" ~  "#38a6e3",
+      mine_corto == "pl" | mine_corto == "pf" ~  "#f2836c",
+      mine_corto == "q" ~  "#2165aa",
+      mine_corto == "m" ~  "#d26428",
+      mine_corto == "b" ~  "#5ca22f",
+      mine_corto == "a" ~  "white",
+      mine_corto == "x" ~  "white"))%>%
+    mutate(mine_corto = as_factor(mine_corto))
+      
 
 riet_03  <- riet %>%
   filter(perfil == "CS03") %>%
   mutate(horizonte = factor(horizonte, 
-                            levels = c("A/E", "Bth", "B", "Bdc2", "B/C2", "Bv2", "B2", "R"))) %>%
+                            levels = c("A/E", "Bth", "B", "Bdc2", "B/C2", 
+                                       "Bv2", "B2", "R"))) %>%
   filter(porcentaje != 0)
 
 
@@ -157,14 +172,21 @@ DRX_df <- file_name[] %>%
                d > 2.2999 & d < 2.3002) ~ "Caliente"))%>%
           mutate_at(c("ID", "HZ","TRATAMIENTO", "ETIQUETA"), as_factor)
 
-mine_d <- c(15, 10, 7.3, 4.5, 4.25, 4.17,4.05, 3.55, 3.35)
-mine_l <- c("S", "I", "HK", "","","G","C","","Q")
+
 
 
 ```
 
 
 ```{r plot_difracto, echo = TRUE}
+
+mine_d <- c(15, 10, 7.3, 4.5, 4.25, 4.17, 4.05, 3.75, 3.55, 3.35, 
+            3.2, 2.7, 2.6, 2.52, 2.45)
+mine_l <- c("s", "i", "h/k", "","","g","c","p","","q", "", "m","b","", "")
+mine_cols <- c("#806dac","#c581a3","#9f742f","#9f742f","#2165aa","#df9d37",
+               "#38a6e3","#f2836c","#9f742f", "#2165aa","#f2836c", "#d26428",
+               "#5ca22f", "#9f742f", "#2165aa")
+
 
 DRX_CS03 <- DRX_df %>% dplyr::filter(ID == "CS03" & d < 17 & d > 2.295 )
 
@@ -177,7 +199,7 @@ p_xrd <- ggplot() +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "N"), 
                 aes(x= d, y= I_plot), 
                 size = 0.1,
-                color = darken("#F5F2F1", 0.5, space = "HCL")) +
+                color = darken("#F5F2F1", 0.3, space = "HCL")) +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "EG"), 
                 aes(x= d, y= I_plot), 
                 size = 0.1,
@@ -185,7 +207,7 @@ p_xrd <- ggplot() +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "C100"), 
                  aes(x= d, y= I_plot), 
                 size = 0.1,
-                color = darken("#F5F2F1", 0.2, space = "HCL")) +
+                color = darken("#F5F2F1", 0.3, space = "HCL")) +
             geom_text_repel(data = DRX_CS03,
                   aes(x = d, y = I_plot, color = TRATAMIENTO, label = ETIQUETA),
                   size = 2.5, #font size
@@ -207,7 +229,7 @@ p_xrd <- ggplot() +
                   box.padding = 0.15) + #If too high, labels clump
             scale_y_continuous(limits = c(0,7), expand = c(0,0)) +
   #limits in scale_x_continuous would cut the line, not plot area: avoided
-            scale_x_continuous(trans = trans_reverser('log2'), 
+            scale_x_continuous(trans = trans_reverser('log10'), 
                      breaks= c(3,4,5, 7,10,15), 
                      labels = c(3,4,5,7,10,15),
                      sec.axis = sec_axis(~., breaks = mine_d,
@@ -215,24 +237,20 @@ p_xrd <- ggplot() +
             facet_wrap(~ HZ, ncol = 1 ) + 
             labs(x = "distancia entre planos (Angstrom)")+
             theme(plot.margin = margin(20, 65, 20, 10), #top, right, bottom, left
-                  panel.grid = element_line(
-                                  linetype = c("dashed"),
-                                  colour = darken("#F5F2F1", 
-                                                  0.05, 
-                                                  space = "HCL")),
+                  panel.grid = element_line(colour = "white"),
                   axis.ticks.x.top =element_line(
                                   size = 0.1,
-                                  arrow = arrow(length = unit(0.2, "lines"), 
+                                  arrow = arrow(length = unit(0.3, "lines"), 
                                                 ends = "first", 
                                                 type = "closed"),
-                                                color = c("blue","red")),
+                                                color = mine_cols),
                   axis.text.x = element_text(
                                   color = darken("#F5F2F1", 
                                                  0.3, 
                                                  space = "HCL")),
                   axis.text.x.top = element_text(margin = margin(0,0,16,0),
-                                                 color = c("blue","red"),
-                                                 size = 6),
+                                                 color = mine_cols,
+                                                 size = 7),
                   axis.title.x.bottom = element_text(
                                   margin = margin(16, 0, 0, 0)),
                   strip.text = element_blank(),
