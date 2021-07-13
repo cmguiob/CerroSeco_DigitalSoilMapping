@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup_chunks, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align="center", warning = FALSE, echo = FALSE, fig.width = 5.5)
+knitr::opts_chunk$set(echo = TRUE,  warning = FALSE, echo = FALSE, fig.width = 5.8, fig.align="center",fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
 
 library(hrbrthemes)
 library(waffle) #gg_waffle
@@ -16,6 +16,7 @@ library(ggrepel)
 library(colorspace)
 library(tidyverse)
 library(patchwork) #plot layout
+library(showtext)
 
 ```
 
@@ -23,25 +24,33 @@ blabla
 
 ```{r setup_plot}
 
-theme_set(theme_minimal(base_family = "Avenir Next Condensed"))
+# Obtener fuentes
+font_add_google(name = "Roboto Condensed", family= "robotoc")
+font_add_google(name = "Roboto", family= "roboto")
+
+theme_set(theme_minimal(base_family = "roboto"))
 
 theme_update(strip.background = element_blank(),
+             axis.text = element_text(family = "robotoc"),
              axis.title.y = element_blank(),
              axis.text.y = element_blank(),
              axis.ticks.y = element_blank(),
              #spacing between figures/blocks and outer rim
              plot.margin = margin(c(1,1,1,1)),
              # "#F6F1EB" is 0.8 loghter than "#c3beb8"
-             plot.background = element_rect(color =  "#F6F1EB",
-                                            fill =  "#F6F1EB", 
+             plot.background = element_rect(color =  "#F5F2F1",
+                                            fill =  "#F5F2F1", 
                                             size = 2),
              # spacing between facets in a single block
              panel.spacing = unit(0.02, "lines"),
              panel.grid.major.y = element_blank(),
              panel.grid.minor.y = element_blank(),
-             axis.title = element_text(colour = darken("#c3beb8", 0.2, 
+             axis.title = element_text(colour = darken("#F5F2F1", 0.3, 
                                                        space = "HCL"), 
-                                       face = "bold")) 
+                                       face = "bold",
+                                       family = "roboto")) 
+
+
 
 ```
 
@@ -82,12 +91,13 @@ p_riet <- riet_03 %>%
   coord_equal() +
   labs(fill = NULL, colour = NULL) +
   facet_wrap(~horizonte, ncol = 1, strip.position = "left")+
-  theme(axis.text = element_blank(),
+  theme(plot.margin = margin(20, 10, 20, 10),
+        axis.text = element_blank(),
         axis.ticks = element_blank(),
         plot.background = element_rect(fill = "white"),
         panel.grid = element_blank(),
         strip.placement = "outside",
-        strip.text.y.left = element_text(colour = darken("#c3beb8", 0.2, 
+        strip.text.y.left = element_text(colour = darken("#F5F2F1", 0.3, 
                                                        space = "HCL"), 
                                         face = "bold",
                                         angle = 0),
@@ -147,7 +157,8 @@ DRX_df <- file_name[] %>%
                d > 2.2999 & d < 2.3002) ~ "Caliente"))%>%
           mutate_at(c("ID", "HZ","TRATAMIENTO", "ETIQUETA"), as_factor)
 
-
+mine_d <- c(15, 10, 7.3, 4.5, 4.25, 4.17,4.05, 3.55, 3.35)
+mine_l <- c("S", "I", "HK", "","","G","C","","Q")
 
 
 ```
@@ -155,74 +166,85 @@ DRX_df <- file_name[] %>%
 
 ```{r plot_difracto, echo = TRUE}
 
-DRX_CS03 <- DRX_df %>% dplyr::filter(ID == "CS03" & d < 19 & d > 2.295 )
+DRX_CS03 <- DRX_df %>% dplyr::filter(ID == "CS03" & d < 17 & d > 2.295 )
 
 
 p_xrd <- ggplot() +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "P"), 
                 aes(x= d, y= I_plot), 
-                size = 0.45,
-                color = darken("#f6f2ed", 0.5, space = "HCL")) +
+                size = 0.5,
+                color = darken("#F5F2F1", 0.5, space = "HCL")) +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "N"), 
                 aes(x= d, y= I_plot), 
                 size = 0.1,
-                color = darken("#f6f2ed", 0.5, space = "HCL")) +
+                color = darken("#F5F2F1", 0.5, space = "HCL")) +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "EG"), 
                 aes(x= d, y= I_plot), 
                 size = 0.1,
-                color = darken("#f6f2ed", 0.3, space = "HCL")) +
+                color = darken("#F5F2F1", 0.3, space = "HCL")) +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "C100"), 
                  aes(x= d, y= I_plot), 
                 size = 0.1,
-                color = darken("#f6f2ed", 0.2, space = "HCL")) +
+                color = darken("#F5F2F1", 0.2, space = "HCL")) +
             geom_text_repel(data = DRX_CS03,
                   aes(x = d, y = I_plot, color = TRATAMIENTO, label = ETIQUETA),
                   size = 2.5, #font size
+                  colour = darken("#F5F2F1", 0.5, space = "HCL"),
+                  family = "roboto",
                   hjust = 0,
                   direction = "y",
                   xlim = c(2.25, NA), #para que salgan de la gráfica
                   ylim = c(-0.5, 60), #para que salgan de la gráfica
-                  nudge_x = 0.27,
-                  segment.size = 0.6, #segment thickness
+                  nudge_x = 0.2,
+                  segment.size = 0.4, #segment thickness
                   segment.curvature = -0.2, #curvature direction - for left
                   segment.alpha = .5,
                   segment.linetype = "dotted",
                   #segment.ncp = 3,
-                  segment.square= FALSE,
                   segment.inflect = TRUE,
                   segment.angle = 10,
                   point.padding = 0.05,
-                  box.padding = 0.18) + #If too high, labels clump
+                  box.padding = 0.15) + #If too high, labels clump
             scale_y_continuous(limits = c(0,7), expand = c(0,0)) +
   #limits in scale_x_continuous would cut the line, not plot area: avoided
             scale_x_continuous(trans = trans_reverser('log2'), 
                      breaks= c(3,4,5, 7,10,15), 
-                     labels = c(3,4,5,7,10,15))+
+                     labels = c(3,4,5,7,10,15),
+                     sec.axis = sec_axis(~., breaks = mine_d,
+                                         labels = mine_l))+
             facet_wrap(~ HZ, ncol = 1 ) + 
             labs(x = "distancia entre planos (Angstrom)")+
-            theme(
-                  plot.margin = margin(50, 70, 20, 10), #top, right, bottom, left
+            theme(plot.margin = margin(20, 65, 20, 10), #top, right, bottom, left
                   panel.grid = element_line(
                                   linetype = c("dashed"),
-                                  colour = darken("#f6f2ed", 
+                                  colour = darken("#F5F2F1", 
                                                   0.05, 
                                                   space = "HCL")),
+                  axis.ticks.x.top =element_line(
+                                  size = 0.1,
+                                  arrow = arrow(length = unit(0.2, "lines"), 
+                                                ends = "first", 
+                                                type = "closed"),
+                                                color = c("blue","red")),
                   axis.text.x = element_text(
-                                  color = darken("#f6f2ed", 
-                                                 0.5, 
+                                  color = darken("#F5F2F1", 
+                                                 0.3, 
                                                  space = "HCL")),
-                  strip.text = element_blank(),
+                  axis.text.x.top = element_text(margin = margin(0,0,16,0),
+                                                 color = c("blue","red"),
+                                                 size = 6),
                   axis.title.x.bottom = element_text(
-                                  margin = margin(15, 0, 0, 0)),
+                                  margin = margin(16, 0, 0, 0)),
+                  strip.text = element_blank(),
                   legend.position = "none") +
                   # with coord_cartesian the limits cut the plot area
-                  coord_cartesian(xlim = c(17, 2.5), ylim = c(0, 7), clip = "off") 
+                  coord_cartesian(xlim = c(16, 2.5), ylim = c(0, 7), clip = "off") 
 
 ```
 
 ```{r plt_layout}
 
-p_riet + p_xrd + plot_layout(widths = c(1, 3))
+p_riet + p_xrd + plot_layout(widths = c(1, 3.5))
 
 ```
 
