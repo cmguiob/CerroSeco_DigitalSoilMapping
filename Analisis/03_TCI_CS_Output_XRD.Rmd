@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup_chunks, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,  warning = FALSE, echo = FALSE, fig.width = 5.8, fig.align="center",fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+knitr::opts_chunk$set(echo = TRUE,  warning = FALSE, echo = FALSE, fig.align="center",fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
 
 library(hrbrthemes)
 library(waffle) #gg_waffle
@@ -38,8 +38,8 @@ theme_update(strip.background = element_blank(),
              #spacing between figures/blocks and outer rim
              plot.margin = margin(c(1,1,1,1)),
              # "#F6F1EB" is 0.8 loghter than "#c3beb8"
-             plot.background = element_rect(color =  "#F5F2F1",
-                                            fill =  "#F5F2F1", 
+             plot.background = element_rect(color =  "grey96",
+                                            fill =  "grey96", 
                                             size = 2),
              # spacing between facets in a single block
              panel.spacing = unit(0.02, "lines"),
@@ -65,15 +65,17 @@ riet <- riet %>%
   mutate(colores = case_when(
       mine_corto == "s" ~  "#806dac",
       mine_corto == "i" ~  "#c581a3",
-      mine_corto == "h" | mine_corto == "hk" ~  "#9f742f",
-      mine_corto == "g" ~  "#df9d37",
+      mine_corto == "h" ~  "#a47832", 
+      mine_corto == "hk" ~ "#9f742f",
+      mine_corto == "g" ~  "#eddc5e",
       mine_corto == "c" ~  "#38a6e3",
-      mine_corto == "pl" | mine_corto == "pf" ~  "#f2836c",
+      mine_corto == "pl" ~ "#FFA08E"  ,
+      mine_corto == "pf" ~ "#fc9681",
       mine_corto == "q" ~  "#2165aa",
       mine_corto == "m" ~  "#d26428",
       mine_corto == "b" ~  "#5ca22f",
-      mine_corto == "a" ~  "white",
-      mine_corto == "x" ~  "white"))%>%
+      mine_corto == "a" ~  "grey98",
+      mine_corto == "x" ~  "grey96"))%>%
     mutate(mine_corto = as_factor(mine_corto))
       
 
@@ -82,6 +84,12 @@ riet_03  <- riet %>%
   mutate(horizonte = factor(horizonte, 
                             levels = c("A/E", "Bth", "B", "Bdc2", "B/C2", 
                                        "Bv2", "B2", "R"))) %>%
+  filter(porcentaje != 0)
+
+riet_01  <- riet %>%
+  filter(perfil == "CS01") %>%
+  mutate(horizonte = factor(horizonte, 
+                            levels = c("Bt", "Bn1", "Bt1"))) %>%
   filter(porcentaje != 0)
 
 
@@ -93,9 +101,7 @@ You can also embed plots, for example:
 
 ```{r plot_waffle, echo = TRUE}
 
-p_riet <- riet_03 %>%
-  filter(perfil == "CS03") %>%
-  filter(porcentaje != 0) %>%
+p_riet_03 <- riet_03 %>%
   ggplot() +
   geom_waffle(aes(fill = mine_corto, values = porcentaje),
               show.legend = FALSE,
@@ -105,6 +111,7 @@ p_riet <- riet_03 %>%
               radius = unit(2, "pt"))+
   coord_equal() +
   labs(fill = NULL, colour = NULL) +
+  scale_fill_manual(values = unique(riet_03$colores))+
   facet_wrap(~horizonte, ncol = 1, strip.position = "left")+
   theme(plot.margin = margin(20, 10, 20, 10),
         axis.text = element_blank(),
@@ -118,6 +125,29 @@ p_riet <- riet_03 %>%
                                         angle = 0),
         strip.switch.pad.wrap = unit(0.5, "lines"))
 
+p_riet_01 <- riet_01 %>%
+  ggplot() +
+  geom_waffle(aes(fill = mine_corto, values = porcentaje),
+              show.legend = FALSE,
+              size = 0.1, #lining spacing
+              color = "white",
+              flip = TRUE,
+              radius = unit(2, "pt"))+
+  coord_equal() +
+  labs(fill = NULL, colour = NULL) +
+  scale_fill_manual(values = unique(riet_01$colores))+
+  facet_wrap(~horizonte, ncol = 1, strip.position = "left")+
+  theme(plot.margin = margin(20, 10, 20, 10),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.grid = element_blank(),
+        strip.placement = "outside",
+        strip.text.y.left = element_text(colour = darken("#F5F2F1", 0.3, 
+                                                       space = "HCL"), 
+                                        face = "bold",
+                                        angle = 0),
+        strip.switch.pad.wrap = unit(0.5, "lines"))
 
 
 ```
@@ -162,13 +192,13 @@ DRX_df <- file_name[] %>%
                             l = 1.541838, 
                             d2r = 0.0174532925199433)) %>%
           mutate(ETIQUETA = case_when(
-            (HZ == "A/E" & TRATAMIENTO == "P"  & 
+            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "P"  & 
                d > 2.2999 & d < 2.3002 ) ~ "Polvo",
-            (HZ == "A/E" & TRATAMIENTO == "N" &
+            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "N" &
                d > 2.2999 & d < 2.3002) ~ "Orientada",
-            (HZ == "A/E" & TRATAMIENTO == "EG" &
+            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "EG" &
                d > 2.2999 & d < 2.3002) ~ "Etilenglicol",
-            (HZ == "A/E" & TRATAMIENTO == "C100" &
+            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "C100" &
                d > 2.2999 & d < 2.3002) ~ "Caliente"))%>%
           mutate_at(c("ID", "HZ","TRATAMIENTO", "ETIQUETA"), as_factor)
 
@@ -178,20 +208,20 @@ DRX_df <- file_name[] %>%
 ```
 
 
-```{r plot_difracto, echo = TRUE}
+```{r plot_xrd_03, echo = TRUE}
 
-mine_d <- c(15, 10, 7.3, 4.5, 4.25, 4.17, 4.05, 3.75, 3.55, 3.35, 
-            3.2, 2.7, 2.6, 2.52, 2.45)
-mine_l <- c("s", "i", "h/k", "","","g","c","p","","q", "", "m","b","", "")
-mine_cols <- c("#806dac","#c581a3","#9f742f","#9f742f","#2165aa","#df9d37",
-               "#38a6e3","#f2836c","#9f742f", "#2165aa","#f2836c", "#d26428",
-               "#5ca22f", "#9f742f", "#2165aa")
+mine_d_03 <- c(15, 10, 7.3, 4.5, 4.25, 4.175, 4.05, 3.75, 3.55, 3.35, 
+            3.2, 2.98,2.71, 2.58, 2.52, 2.45)
+mine_l_03 <- c("S", "I", "K/H", "","","G","C","F","","Q", "","Hb" ,"He","","", "")
+mine_cols_03 <- c("#806dac","#c581a3","#9f742f","#9f742f","#2165aa","#eddc5e",
+               "#38a6e3","#fc9681","#9f742f","#2165aa","#fc9681","#5ca22f",
+               "#d26428", "#5ca22f", "#9f742f", "#2165aa")
 
 
 DRX_CS03 <- DRX_df %>% dplyr::filter(ID == "CS03" & d < 17 & d > 2.295 )
 
 
-p_xrd <- ggplot() +
+p_xrd_03 <- ggplot() +
             geom_line(data = DRX_CS03 %>% dplyr::filter(TRATAMIENTO == "P"), 
                 aes(x= d, y= I_plot), 
                 size = 0.5,
@@ -216,54 +246,139 @@ p_xrd <- ggplot() +
                   hjust = 0,
                   direction = "y",
                   xlim = c(2.25, NA), #para que salgan de la gráfica
-                  ylim = c(-0.5, 60), #para que salgan de la gráfica
-                  nudge_x = 0.2,
+                  ylim = c(-0.8, NA), #para que salgan de la gráfica
+                  nudge_x = 0.1,
                   segment.size = 0.4, #segment thickness
                   segment.curvature = -0.2, #curvature direction - for left
                   segment.alpha = .5,
                   segment.linetype = "dotted",
-                  #segment.ncp = 3,
-                  segment.inflect = TRUE,
+                  segment.ncp = 3,
                   segment.angle = 10,
                   point.padding = 0.05,
-                  box.padding = 0.15) + #If too high, labels clump
+                  box.padding = 0.18) + #If too high, labels clump
             scale_y_continuous(limits = c(0,7), expand = c(0,0)) +
   #limits in scale_x_continuous would cut the line, not plot area: avoided
             scale_x_continuous(trans = trans_reverser('log10'), 
                      breaks= c(3,4,5, 7,10,15), 
                      labels = c(3,4,5,7,10,15),
-                     sec.axis = sec_axis(~., breaks = mine_d,
-                                         labels = mine_l))+
+                     sec.axis = sec_axis(~., breaks = mine_d_03,
+                                         labels = mine_l_03))+
             facet_wrap(~ HZ, ncol = 1 ) + 
-            labs(x = "distancia entre planos (Angstrom)")+
-            theme(plot.margin = margin(20, 65, 20, 10), #top, right, bottom, left
+            labs(x = "distancia interplanar (Angstrom)")+
+            theme(plot.margin = margin(20, 70, 20, 10), #top, right, bottom, left
                   panel.grid = element_line(colour = "white"),
                   axis.ticks.x.top =element_line(
                                   size = 0.1,
-                                  arrow = arrow(length = unit(0.3, "lines"), 
+                                  arrow = arrow(length = unit(0.4, "lines"), 
                                                 ends = "first", 
                                                 type = "closed"),
-                                                color = mine_cols),
+                                                color = mine_cols_03),
                   axis.text.x = element_text(
                                   color = darken("#F5F2F1", 
                                                  0.3, 
                                                  space = "HCL")),
                   axis.text.x.top = element_text(margin = margin(0,0,16,0),
-                                                 color = mine_cols,
-                                                 size = 7),
+                                                 color = mine_cols_03,
+                                                 size = 8,
+                                                 face = "bold"),
                   axis.title.x.bottom = element_text(
                                   margin = margin(16, 0, 0, 0)),
                   strip.text = element_blank(),
                   legend.position = "none") +
                   # with coord_cartesian the limits cut the plot area
-                  coord_cartesian(xlim = c(16, 2.5), ylim = c(0, 7), clip = "off") 
+                  coord_cartesian(xlim = c(15.1, 2.54), ylim = c(0, 7), clip = "off") 
 
 ```
 
-```{r plt_layout}
+```{r plot_xrd_01, echo = TRUE}
 
-p_riet + p_xrd + plot_layout(widths = c(1, 3.5))
+mine_d_01 <- c(7.3, 4.5, 4.25, 4.175, 4.05, 3.75, 3.55, 3.35, 
+            3.2, 2.98,2.71, 2.58, 2.52, 2.45)
+mine_l_01 <- c("K/H", "","","G","C","F","","Q", "", "Hb" ,"He","","", "")
+mine_cols_01 <- c("#9f742f","#9f742f","#2165aa","#eddc5e",
+               "#38a6e3","#fc9681","#9f742f", "#2165aa","#fc9681", "#5ca22f",
+               "#d26428", "#5ca22f", "#9f742f", "#2165aa")
+
+DRX_CS01 <- DRX_df %>% dplyr::filter(ID == "CS01" & d < 15 & d > 2.295 )
+
+
+p_xrd_01 <- ggplot() +
+            geom_line(data = DRX_CS01 %>% dplyr::filter(TRATAMIENTO == "P"), 
+                aes(x= d, y= I_plot), 
+                size = 0.5,
+                color = darken("#F5F2F1", 0.5, space = "HCL")) +
+            geom_line(data = DRX_CS01 %>% dplyr::filter(TRATAMIENTO == "N"), 
+                aes(x= d, y= I_plot), 
+                size = 0.1,
+                color = darken("#F5F2F1", 0.3, space = "HCL")) +
+            geom_line(data = DRX_CS01 %>% dplyr::filter(TRATAMIENTO == "EG"), 
+                aes(x= d, y= I_plot), 
+                size = 0.1,
+                color = darken("#F5F2F1", 0.3, space = "HCL")) +
+            geom_line(data = DRX_CS01 %>% dplyr::filter(TRATAMIENTO == "C100"), 
+                 aes(x= d, y= I_plot), 
+                size = 0.1,
+                color = darken("#F5F2F1", 0.3, space = "HCL"))+
+            geom_text_repel(data = DRX_CS01,
+                  aes(x = d, y = I_plot, color = TRATAMIENTO, label = ETIQUETA),
+                  size = 2.5, #font size
+                  colour = darken("#F5F2F1", 0.5, space = "HCL"),
+                  family = "roboto",
+                  hjust = 0,
+                  direction = "y",
+                  xlim = c(2.25, NA), #para que salgan de la gráfica
+                  ylim = c(-0.8, NA), #para que salgan de la gráfica
+                  nudge_x = 0.1,
+                  segment.size = 0.4, #segment thickness
+                  segment.curvature = -0.2, #curvature direction - for left
+                  segment.alpha = .5,
+                  segment.linetype = "dotted",
+                  segment.ncp = 3,
+                  segment.angle = 10,
+                  point.padding = 0.05,
+                  box.padding = 0.18) + #If too high, labels clump
+            scale_y_continuous(limits = c(0,8), expand = c(0,0)) +
+  #limits in scale_x_continuous would cut the line, not plot area: avoided
+            scale_x_continuous(trans = trans_reverser('log10'), 
+                     breaks= c(3,4,5, 7,10), 
+                     labels = c(3,4,5,7,10),
+                     sec.axis = sec_axis(~., breaks = mine_d_01,
+                                         labels = mine_l_01))+
+            facet_wrap(~ HZ, ncol = 1 ) + 
+            labs(x = "distancia interplanar (Angstrom)")+
+            theme(plot.margin = margin(20, 70, 20, 10), #top, right, bottom, left
+                  panel.grid = element_line(colour = "white"),
+                  axis.ticks.x.top =element_line(
+                                  size = 0.1,
+                                  arrow = arrow(length = unit(0.4, "lines"), 
+                                                ends = "first", 
+                                                type = "closed"),
+                                                color = mine_cols_01),
+                  axis.text.x = element_text(
+                                  color = darken("#F5F2F1", 
+                                                 0.3, 
+                                                 space = "HCL")),
+                  axis.text.x.top = element_text(margin = margin(0,0,16,0),
+                                                 color = mine_cols_01,
+                                                 size = 8,
+                                                 face = "bold"),
+                  axis.title.x.bottom = element_text(
+                                  margin = margin(16, 0, 0, 0)),
+                  strip.text = element_blank(),
+                  legend.position = "none") +
+                  # with coord_cartesian the limits cut the plot area
+                  coord_cartesian(xlim = c(14, 2.5), ylim = c(0, 8), clip = "off") 
 
 ```
 
+
+```{r layout_01, fig.width = 5.8, fig.height= 3.6}
+
+p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5))
+
+```
+
+```{r layout_03, fig.width= 5.8, fig.height= 5.75}
+p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5))
+```
 
