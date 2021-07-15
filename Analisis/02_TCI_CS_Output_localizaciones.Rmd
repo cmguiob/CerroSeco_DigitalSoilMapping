@@ -20,6 +20,17 @@ output:
 ```{r setup, message=FALSE, warning=FALSE, include = FALSE}
 
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.showtext = T, fig.retina = 1, fig.align = 'center', dpi = 300, out.width = "85%")
+
+library(tidyverse)
+library(rgdal) #leer polígono
+library(sf) #manipular objetos espaciales tipo sf
+library(raster) #manipular objetos raster
+library(osmdata) #obtener datos de osm
+library(ggplot2)
+library(showtext)
+library(ggrepel) #etiquetas 
+library(ggsn) #escala gráfica
+
 ```
 
 \
@@ -37,29 +48,25 @@ Los perfiles de suelo estudiados en detalle y en campo se utilizaron para interp
 
 ```{r data, message=FALSE, warning=FALSE, include = FALSE}
 
-library(tidyverse)
-library(rgdal) #leer polígono
-library(sf) #manipular objetos espaciales tipo sf
-library(raster) #manipular objetos raster
-library(osmdata) #obtener datos de osm
-
-ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco_GIT/"
+ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco/TCI_Cerro Seco_git/"
 
 # Cargar datos de perfiles
-hz <- read.csv(paste(ruta,"Datos/Suelos_CS_Horiz.csv", sep = ""))
-sitio <- read.csv(paste(ruta,"Datos/Suelos_CS_Sitio.csv", sep = "")) 
-hz4 <- hz[1:23,]
-head(hz4, 5)
+hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
 
-#Cargar poligono CS y transformar a sf para manipular con ggplot
-CSsp84 <- readOGR(dsn= paste(ruta,"./Datos_GIS/Poligonos/Límite_P.E-Cerro_seco_WGS84.shp", sep = ""))
-CSsf84 <- st_as_sf(CSsp84, coords = c("long", "lat"), crs = 4326) 
+sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
 
+#Select four profiles and relevant properties for plot
+hz4 <- hz %>%
+  dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04")) %>%
+  dplyr::select(ID, BASE, TOPE, ESP, HZ, CON_POR, MX_H, MX_V, MX_C, CON_H, CON_V, CON_C )
 
-# Cargar poligonos mineria 2019 y convertir a sf
-min2019 <-readOGR(dsn= paste(ruta,"./Datos_GIS/Poligonos/Mineria_2019_4326.shp", sep = "")) 
-min2019sf <- st_as_sf(min2019, coords = c("long", "lat"), crs = 4326)
+#Cargar poligono CS como sf
+url_limite <- "https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/limite_CS_WGS84.geojson"
+CSsf84 <- st_read(url_limite)
 
+# Cargar poligonos mineria 2019 como sf
+url_mineria <- ("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/mineria_2019_CS_WGS84.geojson")
+min2019sf <- st_read(url_mineria)
 
 # Cargar DEM y transformar a data frame para manipular con ggplot
 DEM_ras84 <- raster(x = paste(ruta,"./Datos_GIS/DEM_derivados/DEM_CerroSeco_Clipped_4326.tif", sep = ""))
@@ -91,7 +98,7 @@ calles <- getbb("Bogotá")%>%
 
 
 
-```{r prep1, message=FALSE, warning=FALSE, include = FALSE}
+```{r prep_circle, message=FALSE, warning=FALSE, include = FALSE}
 library(showtext)
 
 # Calcular centroide
@@ -118,6 +125,17 @@ st_crs(circle_sf) = 4326
 # Clip calles OSM 
 cutout <- st_intersection(calles$osm_lines, circle_sf)
 
+
+
+```
+
+## La distribución de los perfiles
+
+Debido a la accesibilidad a diferentes zonas, los perfiles de suelo estudiados corresponden a exposiciones naturales, en cárcavas, a lo largo de una franja orientada SO-NE. En la figura se descatan cuatro perfiles, los cuales se estudiaron mediante técnicas de campo y laboratorio.
+
+\ 
+
+```{r theme, message=FALSE, warning=FALSE, include = FALSE}
 # Posibles escalas de color
 col_scp <- c('#6AB6AA', '#4B6E8E', '#F9C93C', '#DA7543')
 col_ito <- c('#56B4E9', '#009E73',"#E69F00", "#D55E00")
@@ -149,20 +167,10 @@ theme_update(panel.grid = element_blank(),
                                         face = "bold"),
              legend.key.size = unit(0.8, "cm"))
 
-
 ```
 
-## La distribución de los perfiles
-
-Debido a la accesibilidad a diferentes zonas, los perfiles de suelo estudiados corresponden a exposiciones naturales, en cárcavas, a lo largo de una franja orientada SO-NE. En la figura se descatan cuatro perfiles, los cuales se estudiaron mediante técnicas de campo y laboratorio.
-
-\ 
 
 ```{r map, message=FALSE, warning=FALSE, echo = TRUE}
-
-library(ggplot2)
-library(ggrepel) #etiquetas 
-library(ggsn) #escala gráfica
 
 ggplot() +
   geom_sf(data = cutout,
