@@ -10,100 +10,31 @@ output:
     keep_md: true
 ---
 
-```{r setup_chunks, include=FALSE}
-
-knitr::opts_chunk$set(echo = TRUE,  warning = FALSE, echo = FALSE, fig.align="center",fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
-
-library(hrbrthemes)
-library(waffle) #gg_waffle
-library(ggplot2)
-library(ggforce) #trans_reverser
-library(ggrepel)
-library(colorspace) #manipulate colors
-library(tidyverse)
-library(patchwork) #plot layout
-library(showtext) #google fonts
-
-```
 
 
-```{r setup_plot}
 
-# Obtener fuentes
-font_add_google(name = "Roboto Condensed", family= "robotoc")
-font_add_google(name = "Roboto", family= "roboto")
 
-theme_set(theme_minimal(base_family = "roboto"))
-
-theme_update(strip.background = element_blank(),
-             axis.text = element_text(family = "robotoc"),
-             axis.title.y = element_blank(),
-             axis.text.y = element_blank(),
-             axis.ticks.y = element_blank(),
-             #spacing between figures/blocks and outer rim
-             plot.margin = margin(c(1,1,1,1)),
-             # "#F6F1EB" is 0.8 loghter than "#c3beb8"
-             plot.background = element_rect(color =  "grey96",
-                                            fill =  "grey96", 
-                                            size = 2),
-             # spacing between facets in a single block
-             panel.spacing = unit(0.02, "lines"),
-             panel.grid.major.y = element_blank(),
-             panel.grid.minor.y = element_blank(),
-             axis.title = element_text(colour = darken("#F5F2F1", 0.3, 
-                                                       space = "HCL"), 
-                                       face = "bold",
-                                       family = "roboto")) 
 
 
 
 ```
-
-
-```{r prep_waffle}
-
-riet <- readr::read_csv("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Difraccion/CS_Rietvelt.csv")
-
-riet <- riet %>%
-  mutate(colores = case_when(
-      mine_corto == "s" ~  "#806dac",
-      mine_corto == "i" ~  "#c581a3",
-      mine_corto == "h" ~  "#a47832", 
-      mine_corto == "hk" ~ "#9f742f",
-      mine_corto == "g" ~  "#eddc5e",
-      mine_corto == "c" ~  "#38a6e3",
-      mine_corto == "pl" ~ "#FFA08E"  ,
-      mine_corto == "pf" ~ "#fc9681",
-      mine_corto == "q" ~  "#2165aa",
-      mine_corto == "m" ~  "#d26428",
-      mine_corto == "b" ~  "#5ca22f",
-      mine_corto == "a" ~  "grey98",
-      mine_corto == "x" ~  "grey96"))%>%
-    mutate(mine_corto = as_factor(mine_corto))
-      
-
-riet_03  <- riet %>%
-  filter(perfil == "CS03") %>%
-  mutate(horizonte = factor(horizonte, 
-                            levels = c("A/E", "Bth", "B", "Bdc2", "B/C2", 
-                                       "Bv2", "B2", "R"))) %>%
-  filter(porcentaje != 0)
-
-riet_01  <- riet %>%
-  filter(perfil == "CS01") %>%
-  mutate(horizonte = factor(horizonte, 
-                            levels = c("Bt", "Bn1", "Bt1"))) %>%
-  filter(porcentaje != 0)
-
-
+## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   mine_largo = col_character(),
+##   mine_corto = col_character(),
+##   perfil = col_character(),
+##   horizonte = col_character(),
+##   porcentaje = col_double()
+## )
 ```
 
 ## 
 
 You can also embed plots, for example:
 
-```{r plot_waffle, echo = TRUE}
 
+```r
 p_riet_03 <- riet_03 %>%
   ggplot() +
   geom_waffle(aes(fill = mine_corto, values = porcentaje),
@@ -151,68 +82,15 @@ p_riet_01 <- riet_01 %>%
                                         face = "bold",
                                         angle = 0),
         strip.switch.pad.wrap = unit(0.5, "lines"))
-
-
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-```{r prep_dicfracto}
-
-ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco/"
-
-files_list <- list.files(path = (paste(ruta,"Datos/Difraccion/", sep = "")), pattern = ".*xy$")
-
-file_name <- paste(ruta,"Datos/Difraccion/",files_list, sep = "")
-
-sample_names <- c("CS02_A_P","CS01_Bt_P", "CS01_Bn1_P", "CS01_Bt1_P",   
-                  "CS03_A/E_P","CS03_A/E_C",  "CS03_A/E_C100", "CS03_A/E_EG", 
-                  "CS03_A/E_N","CS03_Bth_P", "CS03_Bth_C", "CS03_Bth_C100",
-                  "CS03_Bth_EG","CS03_Bth_N","CS03_Bdc2_P","CS03_Bdc2_C",
-                  "CS03_Bdc2_C100","CS03_Bdc2_EG","CS03_Bdc2_N","CS03_B/C2_P",
-                  "CS03_B/C2_C","CS03_B/C2_C100","CS03_B/C2_EG","CS03_B/C2_N",
-                  "CS03_Bv2_P", "CS03_Bv2_C", "CS03_Bv2_C100", "CS03_Bv2_EG",
-                  "CS03_Bv2_N","CS03_B2_P","CS03_B2_C","CS03_B2_C100",
-                  "CS03_B2_EG","CS03_B2_N")
-
-#Calculate D for optional plotting
-braggs <- function(ttheta, l, d2r){l/(2*sin(ttheta*0.5*d2r))}
-
-DRX_df <- file_name[] %>%
-          map(~ read.table(., sep = " "))%>%
-          map(~ `names<-`(., c("ttheta","I")))%>%
-         `names<-`(sample_names)             %>%
-          bind_rows(.id = "ID_HZ_T") %>%
-          separate(col = ID_HZ_T, 
-                   into = c("ID", "HZ", "TRATAMIENTO"), sep = "_") %>%
-          mutate(I_scaled = scale(I, center = FALSE)) %>% 
-          mutate(I_plot = case_when(
-            (TRATAMIENTO == "P") ~ I_scaled + 0.5,
-            (TRATAMIENTO == "N") ~ I_scaled + 2,
-            (TRATAMIENTO == "EG") ~ I_scaled + 3.5,
-            (TRATAMIENTO == "C100") ~ I_scaled + 5)) %>% 
-          mutate(d = braggs(ttheta = ttheta, 
-                            l = 1.541838, 
-                            d2r = 0.0174532925199433)) %>%
-          mutate(ETIQUETA = case_when(
-            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "P"  & 
-               d > 2.2999 & d < 2.3002 ) ~ "Polvo",
-            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "N" &
-               d > 2.2999 & d < 2.3002) ~ "Orientada",
-            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "EG" &
-               d > 2.2999 & d < 2.3002) ~ "Etilenglicol",
-            ((HZ == "A/E" | HZ == "Bt") & TRATAMIENTO == "C100" &
-               d > 2.2999 & d < 2.3002) ~ "Caliente"))%>%
-          mutate_at(c("ID", "HZ","TRATAMIENTO", "ETIQUETA"), as_factor)
 
 
 
 
-```
-
-
-```{r plot_xrd_03, echo = TRUE}
-
+```r
 mine_d_03 <- c(15, 10, 7.3, 4.5, 4.25, 4.175, 4.05, 3.75, 3.55, 3.35, 
             3.2, 2.98,2.71, 2.58, 2.52, 2.45)
 mine_l_03 <- c("S", "I", "K/H", "","","G","C","F","","Q", "","Hb" ,"He","","", "")
@@ -290,11 +168,10 @@ p_xrd_03 <- ggplot() +
                   legend.position = "none") +
                   # with coord_cartesian the limits cut the plot area
                   coord_cartesian(xlim = c(15.1, 2.54), ylim = c(0, 7), clip = "off") 
-
 ```
 
-```{r plot_xrd_01, echo = TRUE}
 
+```r
 mine_d_01 <- c(7.3, 4.5, 4.25, 4.175, 4.05, 3.75, 3.55, 3.35, 
             3.2, 2.98,2.71, 2.58, 2.52, 2.45)
 mine_l_01 <- c("K/H", "","","G","C","F","","Q", "", "Hb" ,"He","","", "")
@@ -371,17 +248,10 @@ p_xrd_01 <- ggplot() +
                   legend.position = "none") +
                   # with coord_cartesian the limits cut the plot area
                   coord_cartesian(xlim = c(14, 2.5), ylim = c(0, 8), clip = "off") 
-
 ```
 
 
-```{r layout_01, fig.width = 5.8, fig.height= 3.6}
+<img src="03_TCI_CS_Output_XRD_files/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
 
-p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5))
-
-```
-
-```{r layout_03, fig.width= 5.8, fig.height= 5.75}
-p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5))
-```
+<img src="03_TCI_CS_Output_XRD_files/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
 
