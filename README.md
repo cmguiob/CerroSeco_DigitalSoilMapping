@@ -23,5 +23,5 @@ This is study aims to create a preliminary map of paleosol sequence distribution
  ![XRD Cerro Seco](https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/03_TCI_CS_Output_XRD_files/figure-html/layout_03-1.png)
  
  ### Physico-chemical properties · *Propiedades fisiciquímicas*
- ![Erosion properties Cerro Seco] (https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/04_TCI_CS_Output_curvas_perfiles_files/figure-html/plot_ero-1.png)
+ ![Erosion properties Cerro Seco](https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/04_TCI_CS_Output_curvas_perfiles_files/figure-html/plot_ero-1.png)
  
