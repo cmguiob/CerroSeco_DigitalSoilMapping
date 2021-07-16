@@ -1,5 +1,5 @@
 ---
-title: "TCI/Cerro Seco"
+title: "TCI - Cerro Seco / Suelos"
 subtitle: "Resultados XRD"
 author: "Carlos Guio"
 date: "10.7.2021"
@@ -11,27 +11,27 @@ output:
 ---
 
 
+```r
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
 
-
-
-
-
-
-```
-## 
-## -- Column specification --------------------------------------------------------
-## cols(
-##   mine_largo = col_character(),
-##   mine_corto = col_character(),
-##   perfil = col_character(),
-##   horizonte = col_character(),
-##   porcentaje = col_double()
-## )
+library(hrbrthemes)
+library(waffle) #gg_waffle
+library(ggplot2)
+library(ggforce) #trans_reverser
+library(ggrepel)
+library(colorspace) #manipulate colors
+library(tidyverse)
+library(patchwork) #plot layout
+library(showtext) #google fonts
 ```
 
-## 
 
-You can also embed plots, for example:
+
+
+
+
+
+### Código: waffle chart de proporciones minerales
 
 
 ```r
@@ -84,10 +84,10 @@ p_riet_01 <- riet_01 %>%
         strip.switch.pad.wrap = unit(0.5, "lines"))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 
 
+### Código: line plot de difractograma CS03
 
 
 ```r
@@ -170,6 +170,8 @@ p_xrd_03 <- ggplot() +
                   coord_cartesian(xlim = c(15.1, 2.54), ylim = c(0, 7), clip = "off") 
 ```
 
+### Código: line plot de difractograma CS01
+
 
 ```r
 mine_d_01 <- c(7.3, 4.5, 4.25, 4.175, 4.05, 3.75, 3.55, 3.35, 
@@ -250,8 +252,19 @@ p_xrd_01 <- ggplot() +
                   coord_cartesian(xlim = c(14, 2.5), ylim = c(0, 8), clip = "off") 
 ```
 
+### Layout
+
+
+```r
+p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5))
+```
 
 <img src="03_TCI_CS_Output_XRD_files/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
+
+
+```r
+p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5))
+```
 
 <img src="03_TCI_CS_Output_XRD_files/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
 
