@@ -1,6 +1,6 @@
 ---
-title: "TCI/Cerro Seco"
-subtitle: "Localizaciones suelos"
+title: "TCI - Cerro Seco / Suelos"
+subtitle: "Localizaciones y perfiles"
 author: "Carlos Guio"
 date: "5.7.2021"
 output:
@@ -10,16 +10,10 @@ output:
     keep_md: true
 ---
 
-<style type="text/css">
-  body{
-  font-size: 14pt;}
-}
-</style>
 
+```{r setup, message=FALSE, warning=FALSE}
 
-```{r setup, message=FALSE, warning=FALSE, include = FALSE}
-
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.showtext = T, fig.retina = 1, fig.align = 'center', dpi = 300, out.width = "85%")
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.showtext = T, fig.retina = 1, fig.align = 'center', dpi = 300, out.width = "75%")
 
 library(tidyverse)
 library(rgdal) #leer polígono
@@ -27,9 +21,12 @@ library(sf) #manipular objetos espaciales tipo sf
 library(raster) #manipular objetos raster
 library(osmdata) #obtener datos de osm
 library(ggplot2)
-library(showtext)
+library(aqp) #Munsell to HEX colors
+library(showtext) #fuentes de goolge
+library(colorspace) #lighten or darken colors
 library(ggrepel) #etiquetas 
 library(ggsn) #escala gráfica
+library(gggibbous) #moons with grain size %
 
 ```
 
@@ -46,7 +43,7 @@ El levantamiento de suelos se realizó con colaboración de  miembros de la comu
 Los perfiles de suelo estudiados en detalle y en campo se utilizaron para interpretar los perfiles que solo contaban con registro fotográfico. De esta interpretación se generalizaron dos tipos de secuencias de horizontes de suelos y paleosuelos, las cuales tienen relevancia para la infiltración de agua, el soporte de la vegetación y los procesos erosivos que modelan el paisaje.
 
 
-```{r data, message=FALSE, warning=FALSE, include = FALSE}
+```{r data}
 
 # Cargar datos de perfiles
 hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
@@ -56,7 +53,7 @@ sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSec
 #Select four profiles and relevant properties for plot
 hz4 <- hz %>%
   dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04")) %>%
-  dplyr::select(ID, BASE, TOPE, ESP, HZ, CON_POR, MX_H, MX_V, MX_C, CON_H, CON_V, CON_C )
+  dplyr::select(ID, BASE, TOPE, ESP, HZ, CON_POR, MX_H, MX_V, MX_C, CON_H, CON_V, CON_C, ARENA, LIMO, ARCILLA )
 
 #Cargar poligono CS como sf
 url_limite <- "https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/limite_CS_WGS84.geojson"
@@ -100,8 +97,7 @@ calles <- getbb("Bogotá")%>%
 
 
 
-```{r prep_circle, message=FALSE, warning=FALSE, include = FALSE}
-library(showtext)
+```{r prep_circle}
 
 # Calcular centroide
 centro_sf <- st_centroid(CSsf84)
@@ -137,7 +133,8 @@ Debido a la accesibilidad a diferentes zonas, los perfiles de suelo estudiados c
 
 \ 
 
-```{r theme, message=FALSE, warning=FALSE, include = FALSE}
+```{r theme}
+
 # Posibles escalas de color
 col_scp <- c('#6AB6AA', '#4B6E8E', '#F9C93C', '#DA7543')
 col_ito <- c('#56B4E9', '#009E73',"#E69F00", "#D55E00")
@@ -172,7 +169,7 @@ theme_update(panel.grid = element_blank(),
 ```
 
 
-```{r map, message=FALSE, warning=FALSE, echo = TRUE}
+```{r map, include = TRUE, echo = TRUE}
 
 ggplot() +
   geom_sf(data = cutout,
@@ -268,9 +265,7 @@ ggplot() +
 
 Los cuatro perfiles estudiados en detalle se presentan como modelos con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje.
 
-```{r prep2, message=FALSE, warning=FALSE, echo = FALSE}
-
-library(aqp)
+```{r prep2}
 
 # Create color variables
 hz4$RGBmx <- munsell2rgb(hz4$MX_H, hz4$MX_V, hz4$MX_C)
@@ -278,20 +273,21 @@ hz4$RGBco <-munsell2rgb(hz4$CON_H,hz4$CON_V , hz4$CON_C)
 
 #Factor horizons to order
 hz_bdf <- hz4 %>%
-  dplyr::select(ID, BASE, TOPE, ESP,HZ, CON_POR, RGBmx, RGBco)%>%
-  dplyr::mutate(ID_HZ = paste(ID, HZ),
-         ID_HZ2 = factor(ID_HZ, ID_HZ)) #this orders by rownumber
-
+  dplyr::mutate(ID_HZ = paste(ID, HZ), #this orders by rownumber
+         ID_HZ2 = factor(ID_HZ, ID_HZ)) %>%
+  rowwise() %>%
+  dplyr::mutate(GRUESOS = sum(ARENA,LIMO))%>%
+  dplyr::mutate(GRANU_TOT = sum(ARENA + LIMO + ARCILLA))
+  
 hz_jdf <-  hz4 %>%
-  dplyr::select(ID, BASE, TOPE, ESP,HZ, CON_POR, RGBmx, RGBco)%>%
   dplyr::mutate(ID = factor(ID),
-         ID_HZ = paste(ID, HZ),
-         ID_HZ2 = factor(ID_HZ, ID_HZ))%>%
-  dplyr::mutate(CON_POR = ifelse(CON_POR == 0, 1, CON_POR),
-         n = 5*ESP*CON_POR / 100,
-         mean = 0.5*(BASE - TOPE),
-         sd = 0.1*ESP)%>%
-  dplyr::mutate(samples = pmap(.[11:13], rnorm))%>%
+         ID_HZ = paste(ID, HZ), 
+         ID_HZ2 = factor(ID_HZ, ID_HZ))%>% #order by rwonumber
+  dplyr::mutate(CON_POR = ifelse(CON_POR == 0, 1, CON_POR), #handle 0% concen.
+         n = 5*ESP*CON_POR / 100, #n for random number generation
+         mean = 0.5*(BASE - TOPE), # mean for random number generation
+         sd = 0.1*ESP)%>% #standard deviation for random number geneartion
+  dplyr::mutate(samples = pmap(.[c("n","mean","sd")], rnorm))%>%
   unnest(samples)
 
 # Points for jitter:
@@ -304,11 +300,11 @@ head(hz_bdf, 10)
  
 \
  
-```{r profiles, message=FALSE, warning=FALSE, echo = TRUE}
-library(colorspace)
+```{r profiles, include = TRUE, echo = TRUE}
+
 
 perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
-  geom_bar(position="stack", stat="identity", width = 0.4) +
+  geom_bar(position="stack", stat="identity", width = 0.35) +
   scale_fill_manual(values = rev(hz_bdf$RGBmx),
                     guide = FALSE) +
   geom_text_repel( data = hz_bdf,   
@@ -329,12 +325,28 @@ perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcat
                    box.padding = 0.3)+
   #y: location from where jitter spreads out vertically, i,e. from the base minus half the tickness
   geom_jitter(data = hz_jdf, aes(x = ID, y = BASE - (ESP/2)),  
-              width = 0.18, 
+              width = 0.15, 
               # height: how far jitter spreads out to each side, i.e. half the tickness
               height = hz_jdf$ESP*0.5,
               size = 0.3,
               col = hz_jdf$RGBco,
               shape = 16)+
+  geom_moon(data = hz_bdf %>% dplyr::filter(!is.na(ARCILLA)), aes(x = ID, 
+                               y = BASE - (ESP/2), 
+                               ratio = ARCILLA/100), 
+             size = 4,
+             right = TRUE,
+             fill = darken("#c3beb8", 0.3, space = "HCL"),
+             color = darken("#c3beb8", 0.3, space = "HCL"),
+             position = position_nudge(x = -0.3))+
+  geom_moon(data = hz_bdf %>% dplyr::filter(!is.na(ARENA)), aes(x = ID, 
+                               y = BASE - (ESP/2), 
+                               ratio = GRUESOS/100), 
+             size = 4,
+             right = FALSE,
+             fill = lighten("#c3beb8", 0.1, space = "HCL"),
+             color = lighten("#c3beb8", 0.1, space = "HCL"),
+             position = position_nudge(x = -0.3))+
   geom_hline(yintercept = 0, col = '#f2d29b')+
   scale_y_reverse(breaks = c(0,100,200,300,400,500), 
                   labels=c("0", "100", "200", "300", "400", "500\ncm"))+
@@ -350,7 +362,7 @@ perfiles
 
 ```
 
-```{r save, include = FALSE}
+```{r save}
 library(pdftools)
 
 #Save

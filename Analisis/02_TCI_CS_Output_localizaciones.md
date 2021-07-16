@@ -1,8 +1,8 @@
 ---
-title: "TCI/Cerro Seco"
-subtitle: "Localizaciones suelos"
+title: "TCI - Cerro Seco / Suelos"
+subtitle: "Localizaciones y perfiles"
 author: "Carlos Guio"
-date: "5th of July 2021"
+date: "5.7.2021"
 output:
   html_document:
     theme: journal
@@ -10,14 +10,24 @@ output:
     keep_md: true
 ---
 
-<style type="text/css">
-  body{
-  font-size: 14pt;}
-}
-</style>
 
 
+```r
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.showtext = T, fig.retina = 1, fig.align = 'center', dpi = 300, out.width = "75%")
 
+library(tidyverse)
+library(rgdal) #leer polígono
+library(sf) #manipular objetos espaciales tipo sf
+library(raster) #manipular objetos raster
+library(osmdata) #obtener datos de osm
+library(ggplot2)
+library(aqp) #Munsell to HEX colors
+library(showtext) #fuentes de goolge
+library(colorspace) #lighten or darken colors
+library(ggrepel) #etiquetas 
+library(ggsn) #escala gráfica
+library(gggibbous) #moons with grain size %
+```
 
 \
 
@@ -33,10 +43,161 @@ Los perfiles de suelo estudiados en detalle y en campo se utilizaron para interp
 
 
 
+```r
+# Cargar datos de perfiles
+hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
+```
+
+```
+## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   .default = col_double(),
+##   ID = col_character(),
+##   NOMBRE = col_character(),
+##   HZ = col_character(),
+##   HZ_DEF = col_character(),
+##   HZ_FORM = col_character(),
+##   PED_TIPO = col_character(),
+##   PED2_TIPO = col_character(),
+##   PED_SIZ = col_character(),
+##   PED2_SIZ = col_character(),
+##   PED_GRADE = col_character(),
+##   PED2_GRADE = col_character(),
+##   REC = col_character(),
+##   MACROP1 = col_character(),
+##   MACROP2 = col_character(),
+##   MX_H = col_character(),
+##   CON_H = col_character(),
+##   CON_TIPO = col_character(),
+##   CON_SIZ = col_character(),
+##   FRAG_TIPO = col_character(),
+##   CLASE_TXT = col_character()
+## )
+## i Use `spec()` for the full column specifications.
+```
+
+```r
+sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
+```
+
+```
+## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   ID = col_character(),
+##   Foto = col_character(),
+##   lat = col_double(),
+##   long = col_double(),
+##   ESP_AFL = col_double(),
+##   ESP_SUELO = col_double(),
+##   PAREN_1 = col_character(),
+##   PAREN_2 = col_character(),
+##   ROCA = col_character(),
+##   SECUENCIA = col_character(),
+##   SECUENCIA_DES = col_character()
+## )
+```
+
+```r
+#Select four profiles and relevant properties for plot
+hz4 <- hz %>%
+  dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04")) %>%
+  dplyr::select(ID, BASE, TOPE, ESP, HZ, CON_POR, MX_H, MX_V, MX_C, CON_H, CON_V, CON_C, ARENA, LIMO, ARCILLA )
+
+#Cargar poligono CS como sf
+url_limite <- "https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/limite_CS_WGS84.geojson"
+CSsf84 <- st_read(url_limite)
+```
+
+```
+## Reading layer `limite_CS_WGS84' from data source `https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/limite_CS_WGS84.geojson' using driver `GeoJSON'
+## Simple feature collection with 1 feature and 4 fields
+## Geometry type: POLYGON
+## Dimension:     XY
+## Bounding box:  xmin: -74.17942 ymin: 4.543404 xmax: -74.15856 ymax: 4.571987
+## Geodetic CRS:  WGS 84
+```
+
+```r
+#Poligons were loaded first from local pc as .shp and then transformed to .geojson
+#writeOGR(CS_limite, "limite_CS_WGS84.geojson", layer = "limite_CS_WGS84" driver = )
+
+# Cargar poligonos mineria 2019 como sf
+url_mineria <- ("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/mineria_2019_CS_WGS84.geojson")
+min2019sf <- st_read(url_mineria)
+```
+
+```
+## Reading layer `mineria_2019_CS_WGS84' from data source `https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/mineria_2019_CS_WGS84.geojson' using driver `GeoJSON'
+## Simple feature collection with 14 features and 12 fields
+## Geometry type: POLYGON
+## Dimension:     XY
+## Bounding box:  xmin: -74.17826 ymin: 4.548972 xmax: -74.15194 ymax: 4.569002
+## Geodetic CRS:  WGS 84
+```
+
+```r
+# Cargar DEM y transformar a data frame para manipular con ggplot
+url_DEM <- "https://github.com/cmguiob/TCI_CerroSeco_git/blob/main/Datos_GIS/DEM_derivados/DEM_CS_Clip_4326.tif?raw=true"
+DEM_ras84 <- raster(url_DEM)
+DEM_clip <- mask(DEM_ras84, min2019sf, inverse = TRUE)
+DEM_df_clip <- as.data.frame(DEM_clip, xy = TRUE)
+names(DEM_df_clip) <- c("long", "lat", "altitude")
+
+#Crear objeto espacial sf de sitio 
+sitio_sp84 <- sitio
+if(is.data.frame(sitio_sp84) == TRUE)coordinates(sitio_sp84) <- ~  long + lat
+proj4string(sitio_sp84) <- "+proj=longlat +datum=WGS84 +no_defs"
+sitio_sf84 <- st_as_sf(sitio_sp84, coords = c("long", "lat"),crs = 4326)
+
+#Extraer datos de elevacion y pegarlos a sf
+alt <- raster::extract(DEM_clip, sitio_sp84)
+sitio = cbind(sitio, alt)
+sitio_sf84 = cbind(sitio_sf84, alt)
+
+#Get osm data
+calles <- getbb("Bogotá")%>% 
+  opq()%>% 
+  add_osm_feature(key = "highway", 
+                  value = c("motorway", "primary", 
+                            "secondary", "tertiary",
+                            "residential", "living_street",
+                            "footway")) %>%  osmdata_sf()
+```
 
 
 
 
+```r
+# Calcular centroide
+centro_sf <- st_centroid(CSsf84)
+
+# Función para círculo
+circleFun <- function(center=c(0,0), diameter=1, npoints=100, start=0, end=2, filled=TRUE){
+  tt <- seq(start*pi, end*pi, length.out=npoints)
+  dfc <- data.frame(
+    x = center[1] + diameter / 2 * cos(tt),
+    y = center[2] + diameter / 2 * sin(tt)
+  )
+  if(filled==TRUE) { 
+    dfc <- rbind(df, center)
+  }
+  return(dfc)
+}
+
+# Aplicar función
+circle <- circleFun(center = c(as.vector(centro_sf$geometry[[1]])), npoints = 1000,diameter = 0.039, filled = FALSE)
+circle_sf <- SpatialPolygons(list(Polygons(list(Polygon(circle[,])), ID=1))) %>% st_as_sfc()
+st_crs(circle_sf) = 4326
+
+# Clip calles OSM 
+cutout <- st_intersection(calles$osm_lines, circle_sf)
+```
+
+```
+## although coordinates are longitude/latitude, st_intersection assumes that they are planar
+```
 
 ## La distribución de los perfiles
 
@@ -46,10 +207,41 @@ Debido a la accesibilidad a diferentes zonas, los perfiles de suelo estudiados c
 
 
 ```r
-library(ggplot2)
-library(ggrepel) #etiquetas 
-library(ggsn) #escala gráfica
+# Posibles escalas de color
+col_scp <- c('#6AB6AA', '#4B6E8E', '#F9C93C', '#DA7543')
+col_ito <- c('#56B4E9', '#009E73',"#E69F00", "#D55E00")
 
+# Obtener fuentes
+font_add_google(name = "Roboto Condensed", family= "robotoc")
+font_add_google(name = "Roboto", family= "roboto")
+
+
+# Definir theme
+theme_set(theme_minimal(base_family = "roboto"))
+
+theme_update(panel.grid = element_blank(),
+             axis.text = element_text(family = "robotoc",
+                                        color = "#c3beb8"),
+             axis.title = element_blank(),
+             axis.ticks.x =  element_line(color = "#c3beb8", size = .7),
+             axis.ticks.y.right =  element_line(color = "#c3beb8", size = .7),
+             legend.position = c(0,0.85),
+             legend.direction = "vertical", 
+             legend.box = "horizontal",
+             legend.title = element_text(size = 13, 
+                                         face = "bold", 
+                                         color = "grey20", 
+                                         family = "roboto"),
+             legend.text = element_text(size = 10, 
+                                        color = "#c3beb8", 
+                                        family = "robotoc",
+                                        face = "bold"),
+             legend.key.size = unit(0.8, "cm"))
+```
+
+
+
+```r
 ggplot() +
   geom_sf(data = cutout,
           color = "#e2ddd6",
@@ -137,7 +329,7 @@ ggplot() +
   guides(color = guide_legend(override.aes = list(size = 3.5))) 
 ```
 
-<img src="02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png" width="85%" style="display: block; margin: auto;" />
+<img src="02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png" width="75%" style="display: block; margin: auto;" />
 
 \
 
@@ -146,28 +338,64 @@ ggplot() +
 Los cuatro perfiles estudiados en detalle se presentan como modelos con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje.
 
 
+```r
+# Create color variables
+hz4$RGBmx <- munsell2rgb(hz4$MX_H, hz4$MX_V, hz4$MX_C)
+hz4$RGBco <-munsell2rgb(hz4$CON_H,hz4$CON_V , hz4$CON_C)
+
+#Factor horizons to order
+hz_bdf <- hz4 %>%
+  dplyr::mutate(ID_HZ = paste(ID, HZ), #this orders by rownumber
+         ID_HZ2 = factor(ID_HZ, ID_HZ)) %>%
+  rowwise() %>%
+  dplyr::mutate(GRUESOS = sum(ARENA,LIMO))%>%
+  dplyr::mutate(GRANU_TOT = sum(ARENA + LIMO + ARCILLA))
+  
+hz_jdf <-  hz4 %>%
+  dplyr::mutate(ID = factor(ID),
+         ID_HZ = paste(ID, HZ), 
+         ID_HZ2 = factor(ID_HZ, ID_HZ))%>% #order by rwonumber
+  dplyr::mutate(CON_POR = ifelse(CON_POR == 0, 1, CON_POR), #handle 0% concen.
+         n = 5*ESP*CON_POR / 100, #n for random number generation
+         mean = 0.5*(BASE - TOPE), # mean for random number generation
+         sd = 0.1*ESP)%>% #standard deviation for random number geneartion
+  dplyr::mutate(samples = pmap(.[c("n","mean","sd")], rnorm))%>%
+  unnest(samples)
+
+# Points for jitter:
+# mean: BASE - TOPE/2, sd = x*ESP, n = 5*CON_POR*ESP/100
+# The problem with n: calculated with a multiple three rule, assuming that 1cm 
+# which is 100% saturated has 5 concentrations, i.e. the size of concentrations is 2mm
+
+head(hz_bdf, 10)
 ```
-##      ID BASE TOPE ESP  HZ CON_POR     RGBmx     RGBco    ID_HZ   ID_HZ2
-## 1  CS01   35    0  35   A       0 #6F5F4CFF #9C750FFF   CS01 A   CS01 A
-## 2  CS01   80   35  45   E       2 #83796FFF #9C750FFF   CS01 E   CS01 E
-## 3  CS01   90   80  10  Bt      80 #686057FF #38302AFF  CS01 Bt  CS01 Bt
-## 4  CS01  140   90  50 B/C      10 #83796FFF #38302AFF CS01 B/C CS01 B/C
-## 5  CS01  170  140  30 Bn1       5 #83796FFF #38302AFF CS01 Bn1 CS01 Bn1
-## 6  CS01  177  170   7 Bt1      80 #666157FF #38302AFF CS01 Bt1 CS01 Bt1
-## 7  CS01  250  177  73  C1       5 #DCA651FF #AB6D28FF  CS01 C1  CS01 C1
-## 8  CS01  280  250  30   R       0 #DEC7A6FF #AB6D28FF   CS01 R   CS01 R
-## 9  CS02   25    0  25   A       0 #725D4EFF #DCA651FF   CS02 A   CS02 A
-## 10 CS02   50   25  25   R       0 #DAC7B5FF #AB6D28FF   CS02 R   CS02 R
+
+```
+## # A tibble: 10 x 21
+## # Rowwise: 
+##    ID     BASE  TOPE   ESP HZ    CON_POR MX_H   MX_V  MX_C CON_H CON_V CON_C
+##    <chr> <dbl> <dbl> <dbl> <chr>   <dbl> <chr> <dbl> <dbl> <chr> <dbl> <dbl>
+##  1 CS01     35     0    35 A           0 10YR      4     2 2.5Y      5     8
+##  2 CS01     80    35    45 E           2 10YR      5     1 2.5Y      5     8
+##  3 CS01     90    80    10 Bt         80 10YR      4     1 10YR      2     1
+##  4 CS01    140    90    50 B/C        10 10YR      5     1 10YR      2     1
+##  5 CS01    170   140    30 Bn1         5 10YR      5     1 10YR      2     1
+##  6 CS01    177   170     7 Bt1        80 2.5Y      4     1 10YR      2     1
+##  7 CS01    250   177    73 C1          5 10YR      7     8 7.5YR     5     8
+##  8 CS01    280   250    30 R           0 10YR      8     3 7.5YR     5     8
+##  9 CS02     25     0    25 A           0 7.5YR     4     2 10YR      7     8
+## 10 CS02     50    25    25 R           0 7.5YR     8     2 7.5YR     5     8
+## # ... with 9 more variables: ARENA <dbl>, LIMO <dbl>, ARCILLA <dbl>,
+## #   RGBmx <chr>, RGBco <chr>, ID_HZ <chr>, ID_HZ2 <fct>, GRUESOS <dbl>,
+## #   GRANU_TOT <dbl>
 ```
  
 \
  
 
 ```r
-library(colorspace)
-
 perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
-  geom_bar(position="stack", stat="identity", width = 0.4) +
+  geom_bar(position="stack", stat="identity", width = 0.35) +
   scale_fill_manual(values = rev(hz_bdf$RGBmx),
                     guide = FALSE) +
   geom_text_repel( data = hz_bdf,   
@@ -188,12 +416,28 @@ perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcat
                    box.padding = 0.3)+
   #y: location from where jitter spreads out vertically, i,e. from the base minus half the tickness
   geom_jitter(data = hz_jdf, aes(x = ID, y = BASE - (ESP/2)),  
-              width = 0.18, 
+              width = 0.15, 
               # height: how far jitter spreads out to each side, i.e. half the tickness
               height = hz_jdf$ESP*0.5,
               size = 0.3,
               col = hz_jdf$RGBco,
               shape = 16)+
+  geom_moon(data = hz_bdf %>% dplyr::filter(!is.na(ARCILLA)), aes(x = ID, 
+                               y = BASE - (ESP/2), 
+                               ratio = ARCILLA/100), 
+             size = 4,
+             right = TRUE,
+             fill = darken("#c3beb8", 0.3, space = "HCL"),
+             color = darken("#c3beb8", 0.3, space = "HCL"),
+             position = position_nudge(x = -0.3))+
+  geom_moon(data = hz_bdf %>% dplyr::filter(!is.na(ARENA)), aes(x = ID, 
+                               y = BASE - (ESP/2), 
+                               ratio = GRUESOS/100), 
+             size = 4,
+             right = FALSE,
+             fill = lighten("#c3beb8", 0.1, space = "HCL"),
+             color = lighten("#c3beb8", 0.1, space = "HCL"),
+             position = position_nudge(x = -0.3))+
   geom_hline(yintercept = 0, col = '#f2d29b')+
   scale_y_reverse(breaks = c(0,100,200,300,400,500), 
                   labels=c("0", "100", "200", "300", "400", "500\ncm"))+
@@ -208,7 +452,24 @@ perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcat
 perfiles
 ```
 
-<img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="85%" style="display: block; margin: auto;" />
+<img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="75%" style="display: block; margin: auto;" />
 
 
+```r
+library(pdftools)
+```
+
+```
+## Using poppler version 21.04.0
+```
+
+```r
+#Save
+#ggsave(paste(ruta,"Perfiles.pdf", sep = ""), plot = perfiles, height = 10, width = 15, device = cairo_pdf())
+
+#pdf_convert(pdf = "Perfiles.pdf", 
+#            filenames = paste(ruta,"Perfiles.png", sep = ""),
+#            format = "png", 
+#            dpi = 300)
+```
 
