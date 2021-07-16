@@ -1,8 +1,8 @@
 ---
-title: "TCI/Cerro Seco"
-subtitle: "Perfiles y propiedades"
+title: "TCI - Cerro Seco / Suelos"
+subtitle: "Perfiles de propiedades fisicoqiímicas"
 author: "Carlos Guio"
-date: "5th of July 2021"
+date: "14.07.2021"
 output:
   html_document:
     theme: journal
@@ -12,9 +12,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup}
+```{r setup_chunks, warning = FALSE, message = FALSE}
 
-knitr::opts_chunk$set(warning = FALSE, echo = FALSE,  fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE,message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
 
 library(tidyverse)
 library(aqp)
@@ -24,11 +24,8 @@ library(colorspace)
 library(showtext) #google fonts
 ```
 
-### Los perfiles
 
-Los cuatro perfiles estudiados en detalle se presentan como modelos (Fig) con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje:
-
-```{r prep_data, include = FALSE}
+```{r prep_data}
 
 # Cargar datos de perfiles
 hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
@@ -48,13 +45,8 @@ aqp::proj4string(hz4) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +e
 
 ```
 
-### Las propiedades 
 
-En la Fig. 3 se presenta la distribución de partículas de arena, limo y arcilla, que tiene un patrón similar para las secuencias tipo B y C (esta última, de mayor ocurrencia en el parque):  un horizonte arenoso / areno-limoso superficial (A/E) que facilita la infiltración y escorrentía subsuperficial, subyacido por uno o mas horizontes arcillosos (Bt), que dificultan la infiltración a través de la matriz del suelo. El horizonte Bt mas superficial tiene un alto contenido de bases, que indican que los procesos de lixiviación -y por tanto la infiltración- son escasos. A aproximadamente 1m de profundidad se observa un horizonte duro, debido en parte a enriquecimiento de minerales estables de Fe, y con notables grietas verticales. El perfil CS03 presenta a ca. 3m de profundidad un horizonte plíntico, extremadamente duro, muy rico en Fe estable, que bloquea la infiltración.
-
-La secuencia tipo A tiene, en comparación con la secuencia tipo C, más arena y limo que arcilla a través del perfil CS01. Se observan algunos horizontes Bt delgados, ricos en arcilla, materia orgánica y bases, que dificiltan la infiltración a través de la matriz. Sin embargo, la materia orgánica cubre las caras de terrones estables de forma angular y subangular, facilitando la infiltración por macroporos. Los óxidos de hierro estables e inestables ocurren en horizontes limosos y arenosos sin formar capas endurecidas.
-
-```{r theme_setup, include = FALSE}
+```{r theme_setup}
 
 # Custom panel function (controls gridlines in panels)
 panel.depth_function2 <- function (x, y, id, upper = NA, lower = NA, subscripts = NULL, 
@@ -177,7 +169,10 @@ sty$axis.text$fontfamily = "robotoc"
 ```
 
 
-```{r prep_plot, include = FALSE}
+## Las propiedades 
+
+
+```{r prep_plot}
 
 #Crear grupos para perfiles hidro
 CShidro <- slab(hz4, fm= ID ~ ARENA + LIMO + ARCILLA + CO + Fe_DCS + DENS_AP)
@@ -199,9 +194,10 @@ CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == 
 
 ```
 
+### Código: xyplot 
+#### Propiedades relevantes para infiltración
 
-
-```{r plot_hidro, echo = TRUE}
+```{r plot_hidro, include = TRUE, echo = TRUE}
 
 # Nombres para paneles
 strip_names <-c( "Arena %", "Limo %","Arcilla %","CO %","Fe -di %", "Densidad")
@@ -236,11 +232,10 @@ xyplot(top ~ p.q50 | variable,
 
 ```
 
-La Fig. 4 presenta la distribución de propiedades químicas que tienen efectos en la vegetación. La textura areno-limosa que presentan todas las secuencias en los primeros 50 cm (Fig. 3)  facilita la penetración de raíces. A esta profundidad, sin embargo, no hay buena disponibilidad de nutrientes, como lo evidencian el pH bajo, bajo contenido de materia orgánica, fósforo y baja capacidad de intercambio catiónico. La presencia de mineraloides de aluminio y sílice en mayor concentración a este nivel indica sin embargo que existen condiciones para almacenar nutrientes.
+### Código: xyplot
+#### Propiedades relevantes para vegetación
 
-Por debajo de los 50 cm las condiciones de nutrientes mejoran en varios aspectos: el pH es neutro a básico, el fósforo (al menos para la secuencia tipo A) aumenta, y la capacidad de intercambio catiónico aumenta. Estas características explican la presencia de raíces penetrando horizontes arcillosos a profundidad de 1m en algunos suelos, lo cual tiene un efecto positivo en la infiltración. 
-
-```{r plot_bio, echo = TRUE}
+```{r plot_bio, include = TRUE, echo = TRUE}
 
 # Nombres para paneles
 strip_names <-c( "pH", "CO %","Bases cmol/kg","P ppm","Si -ox % ", "CIC")
@@ -273,9 +268,10 @@ xyplot(top ~ p.q50 | variable,
                      font = 2)) #legend
 ```
 
-La Fig. 5 presenta las propiedades que afectan la erosión.  Las partículas de tamaño limo son mas propensas a la erosión física que la arena (debido a su peso) y la arcilla (debido a su aglomeración). En este sentido, la secuencia tipo C es mas propensa a la erosión por escorrentía superficial.  El socavamiento subsuperficial ocurre por acción química en horizontes arcillosos, que se observa cuando el sodio intercambiable aumenta, la relación calcio: magnesio es menor o cercana a 2 y la conductividad eléctrica es baja. Estas condiciones se observan en varios horizontes de las secuencias A y C por debajo de 1m. El aumento de pH a esta profundidad genera un efecto desestabilizante para los coloides de arcilla, debido al incremento de cargas negativas, en la superficie de los minerales, que generan un efecto repulsivo entre partículas. 
+### Código: xyplot
+#### Propiedades relevantes para erosión
 
-```{r plot_ero, echo = TRUE}
+```{r plot_ero, include = TRUE, echo = TRUE}
 
 strip_names <-c( "Limo %","CO %" ,"Na cmol/Kg", "Ca:Mg","CE dS/m","pH")
 
