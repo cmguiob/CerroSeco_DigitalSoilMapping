@@ -1,0 +1,311 @@
+---
+title: "TCI/Cerro Seco"
+subtitle: "Perfiles y propiedades"
+author: "Carlos Guio"
+date: "5th of July 2021"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+    keep_md: true
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup}
+
+knitr::opts_chunk$set(warning = FALSE, echo = FALSE,  fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+
+library(tidyverse)
+library(aqp)
+library(sp)
+library(lattice)
+library(colorspace)
+library(showtext) #google fonts
+```
+
+### Los perfiles
+
+Los cuatro perfiles estudiados en detalle se presentan como modelos (Fig) con propiedades de campo. En ellos se observan dos secuencias de suelos contrastantes en el paisaje:
+
+```{r prep_data, include = FALSE}
+
+# Cargar datos de perfiles
+hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
+
+sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
+
+#Select four profiles and relevant properties for plot
+hz4 <- hz[1:23,]
+
+#Crear colección
+depths(hz4) <- ID ~ TOPE + BASE 
+site(hz4) <- sitio
+
+#Inicializar coordenadas
+coordinates(hz4) <- ~  long + lat
+aqp::proj4string(hz4) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
+
+```
+
+### Las propiedades 
+
+En la Fig. 3 se presenta la distribución de partículas de arena, limo y arcilla, que tiene un patrón similar para las secuencias tipo B y C (esta última, de mayor ocurrencia en el parque):  un horizonte arenoso / areno-limoso superficial (A/E) que facilita la infiltración y escorrentía subsuperficial, subyacido por uno o mas horizontes arcillosos (Bt), que dificultan la infiltración a través de la matriz del suelo. El horizonte Bt mas superficial tiene un alto contenido de bases, que indican que los procesos de lixiviación -y por tanto la infiltración- son escasos. A aproximadamente 1m de profundidad se observa un horizonte duro, debido en parte a enriquecimiento de minerales estables de Fe, y con notables grietas verticales. El perfil CS03 presenta a ca. 3m de profundidad un horizonte plíntico, extremadamente duro, muy rico en Fe estable, que bloquea la infiltración.
+
+La secuencia tipo A tiene, en comparación con la secuencia tipo C, más arena y limo que arcilla a través del perfil CS01. Se observan algunos horizontes Bt delgados, ricos en arcilla, materia orgánica y bases, que dificiltan la infiltración a través de la matriz. Sin embargo, la materia orgánica cubre las caras de terrones estables de forma angular y subangular, facilitando la infiltración por macroporos. Los óxidos de hierro estables e inestables ocurren en horizontes limosos y arenosos sin formar capas endurecidas.
+
+```{r theme_setup, include = FALSE}
+
+# Custom panel function (controls gridlines in panels)
+panel.depth_function2 <- function (x, y, id, upper = NA, lower = NA, subscripts = NULL, 
+          groups = NULL, sync.colors = FALSE, cf = NA, cf.col = NA, 
+          cf.interval = 20, ...) 
+{
+  panel.grid(h = -1, v = -1, lty = 3, col = "#DAD7D6")
+  superpose.line <- trellis.par.get("superpose.line")
+  if (length(y) > length(x)) {
+    if (missing(id)) {
+      stop("must provide a profile id")
+    }
+    if (!missing(groups)) {
+      d <- data.frame(prop = x, bnd = y, upper = upper[subscripts], 
+                      lower = lower[subscripts], groups = groups[subscripts], 
+                      id = id[subscripts])
+    }
+    else {
+      d <- data.frame(prop = x, bnd = y, upper = upper[subscripts], 
+                      lower = lower[subscripts], groups = factor(1), 
+                      id = id[subscripts])
+    }
+    by(d, d$id, .make.segments, ...)
+  }
+  else {
+    if (!missing(upper) & !missing(lower)) {
+      if (!missing(groups) & !missing(subscripts)) {
+        d <- data.frame(yhat = x, top = y, upper = upper[subscripts], 
+                        lower = lower[subscripts], groups = groups[subscripts])
+        ll <- levels(d$groups)
+        n_groups <- length(ll)
+      }
+      if (missing(groups)) {
+        fake.groups <- factor(1)
+        d <- data.frame(yhat = x, top = y, upper = upper[subscripts], 
+                        lower = lower[subscripts], groups = fake.groups)
+        ll <- levels(d$groups)
+        n_groups <- length(ll)
+      }
+      if (sync.colors) 
+        region.col <- rep(superpose.line$col, length.out = n_groups)
+      else region.col <- rep(grey(0.7), length.out = n_groups)
+      by(d, d$groups, function(d_i) {
+        m <- match(unique(d_i$group), ll)
+        d_i <- d_i[which(!is.na(d_i$upper) & !is.na(d_i$lower)), 
+        ]
+        panel.polygon(x = c(d_i$lower, rev(d_i$upper)), 
+                      y = c(d_i$top, rev(d_i$top)), col = region.col[m], 
+                      border = NA, ...)
+      })
+    }
+    else {
+      if (missing(groups)) {
+        fake.groups <- factor(1)
+        d <- data.frame(yhat = x, top = y, groups = fake.groups)
+      }
+      else {
+        d <- data.frame(yhat = x, top = y, groups = groups[subscripts])
+      }
+      ll <- levels(d$groups)
+      n_groups <- length(ll)
+    }
+    line.col <- rep(superpose.line$col, length.out = n_groups)
+    line.lty <- rep(superpose.line$lty, length.out = n_groups)
+    line.lwd <- rep(superpose.line$lwd, length.out = n_groups)
+    by(d, d$groups, function(d_i) {
+      m <- match(unique(d_i$group), ll)
+      panel.lines(d_i$yhat, d_i$top, lwd = line.lwd[m], 
+                  col = line.col[m], lty = line.lty[m])
+    })
+  }
+  if (!missing(cf)) {
+    d$cf <- cf[subscripts]
+    by(d, d$groups, function(d_i) {
+      m <- match(unique(d_i$group), ll)
+      if (is.na(cf.col)) {
+        cf.col <- line.col[m]
+      }
+      cf.approx.fun <- approxfun(d_i$top, d_i$cf, method = "linear")
+      y.q95 <- quantile(d_i$top, probs = c(0.95), na.rm = TRUE)
+      a.seq <- seq(from = 2, to = y.q95, by = cf.interval)
+      a.seq <- a.seq + ((m - 1) * cf.interval/4)
+      a.CF <- cf.approx.fun(a.seq)
+      a.text <- paste(round(a.CF * 100), "%")
+      not.na.idx <- which(!is.na(a.CF))
+      a.seq <- a.seq[not.na.idx]
+      a.text <- a.text[not.na.idx]
+      unit <- gpar <- NULL
+      grid.text(a.text, x = unit(0.99, "npc"), y = unit(a.seq, 
+                                                        "native"), just = "right", gp = gpar(font = 3, 
+                                                                                             cex = 0.8, col = cf.col))
+    })
+  }
+}
+
+# Obtener fuentes
+font_add_google(name = "Roboto Condensed", family= "robotoc")
+font_add_google(name = "Roboto", family= "roboto")
+
+# Other trellis parameters
+# Use to explore: str(trellis.par.get(), max.level = 2)
+sty <- list()
+sty$strip.border$col <- NA
+sty$strip.background$col <- NA
+sty$superpose.line$col <- c('#6AB6AA', '#4B6E8E', '#DA7543', '#DA7543')
+sty$superpose.line$lty <- c(1,1,1,2) #property lines
+sty$superpose.line$lwd <- 2.5
+sty$layout.heights$strip <-1.5
+sty$grid.pars$fontfamily <- "roboto"
+sty$axis.components$right$tck <- 0
+sty$axis.components$left$tck <- 0.5
+sty$axis.components$bottom$tck <- 0.5
+sty$axis.line$col <- darken("#F5F2F1", 0.3, space = "HCL")
+sty$par.ylab.text$col = darken("#F5F2F1", 0.3, space = "HCL")
+sty$axis.text$col = darken("#F5F2F1", 0.3, space = "HCL")
+sty$axis.text$fontfamily = "robotoc"
+
+
+
+```
+
+
+```{r prep_plot, include = FALSE}
+
+#Crear grupos para perfiles hidro
+CShidro <- slab(hz4, fm= ID ~ ARENA + LIMO + ARCILLA + CO + Fe_DCS + DENS_AP)
+
+CShg <- make.groups(CS01 = CShidro[CShidro$ID == "CS01",], CS02 = CShidro[CShidro$ID == "CS02",], CS03 = CShidro[CShidro$ID== "CS03",], CS04 = CShidro[CShidro$ID== "CS04",])
+
+#Crear grupos para perfiles bio
+CSbio <- slab(hz4, fm= ID ~ pH + CO + BT + P + Si_OAA + CIC)
+
+CSbg <- make.groups(CS01 = CSbio[CSbio$ID == "CS01",], CS02 = CSbio[CSbio$ID == "CS02",], CS03 = CSbio[CSbio$ID== "CS03",], CS04 = CSbio[CSbio$ID== "CS04",])
+
+
+#Crear grupos para perfiles
+CSero <- slab(hz4, fm= ID ~ LIMO + CO + Na + Ca_Mg + CE + pH)
+
+CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == "CS02",], CS03 = CSero[CSero$ID== "CS03",], CS04 = CSero[CSero$ID== "CS04",])
+
+
+
+```
+
+
+
+```{r plot_hidro, echo = TRUE}
+
+# Nombres para paneles
+strip_names <-c( "Arena %", "Limo %","Arcilla %","CO %","Fe -di %", "Densidad")
+
+
+xyplot(top ~ p.q50 | variable, 
+       groups = which,
+       data=CShg,
+       ylab=list(label ='Profundidad (cm)', fontsize = 9.5),
+       xlab=list(label = ""),
+       lower=CShg$p.q25, upper=CShg$p.q75, ylim=c(400,-2),
+       panel=panel.depth_function2,
+       sync.colors=TRUE,
+       par.settings= sty,
+       prepanel=prepanel.depth_function,
+       layout=c(6,1), 
+       strip=strip.custom(bg= NA, 
+                          par.strip.text=list(font=2, 
+                                              cex=0.7, 
+                                              col= darken("#F5F2F1", 
+                                                          0.5, 
+                                                          space = "HCL")),
+                          factor.levels=strip_names),
+       scales=list(x=list(tick.number=3, alternating=1, relation='free', cex = 0.6), 
+                   y = list(tick.number=6)),
+       auto.key=list(columns=4, 
+                     lines=TRUE, 
+                     points=FALSE, 
+                     col = darken("#F5F2F1", 0.3, space = "HCL"),
+                     size = 2.5,
+                     font = 2)) #legend
+
+```
+
+La Fig. 4 presenta la distribución de propiedades químicas que tienen efectos en la vegetación. La textura areno-limosa que presentan todas las secuencias en los primeros 50 cm (Fig. 3)  facilita la penetración de raíces. A esta profundidad, sin embargo, no hay buena disponibilidad de nutrientes, como lo evidencian el pH bajo, bajo contenido de materia orgánica, fósforo y baja capacidad de intercambio catiónico. La presencia de mineraloides de aluminio y sílice en mayor concentración a este nivel indica sin embargo que existen condiciones para almacenar nutrientes.
+
+Por debajo de los 50 cm las condiciones de nutrientes mejoran en varios aspectos: el pH es neutro a básico, el fósforo (al menos para la secuencia tipo A) aumenta, y la capacidad de intercambio catiónico aumenta. Estas características explican la presencia de raíces penetrando horizontes arcillosos a profundidad de 1m en algunos suelos, lo cual tiene un efecto positivo en la infiltración. 
+
+```{r plot_bio, echo = TRUE}
+
+# Nombres para paneles
+strip_names <-c( "pH", "CO %","Bases cmol/kg","P ppm","Si -ox % ", "CIC")
+
+xyplot(top ~ p.q50 | variable, 
+       groups = which,
+       data=CSbg,
+       ylab=list(label ='Profundidad (cm)', fontsize = 9.5),
+       xlab=list(label = ""),
+       lower=CSbg$p.q25, upper=CSbg$p.q75, ylim=c(200,-2),
+       panel=panel.depth_function2,
+       sync.colors=TRUE,
+       par.settings= sty,
+       prepanel=prepanel.depth_function,
+       layout=c(6,1), 
+       strip=strip.custom(bg= NA, 
+                          par.strip.text=list(font=2, 
+                                              cex=0.7, 
+                                              col= darken("#F5F2F1", 
+                                                          0.5, 
+                                                          space = "HCL")),
+                          factor.levels=strip_names),
+       scales=list(x=list(tick.number=3, alternating=1, relation='free', cex = 0.6), 
+                   y = list(tick.number=6)),
+       auto.key=list(columns=4, 
+                     lines=TRUE, 
+                     points=FALSE, 
+                     col = darken("#F5F2F1", 0.3, space = "HCL"),
+                     size = 2.5,
+                     font = 2)) #legend
+```
+
+La Fig. 5 presenta las propiedades que afectan la erosión.  Las partículas de tamaño limo son mas propensas a la erosión física que la arena (debido a su peso) y la arcilla (debido a su aglomeración). En este sentido, la secuencia tipo C es mas propensa a la erosión por escorrentía superficial.  El socavamiento subsuperficial ocurre por acción química en horizontes arcillosos, que se observa cuando el sodio intercambiable aumenta, la relación calcio: magnesio es menor o cercana a 2 y la conductividad eléctrica es baja. Estas condiciones se observan en varios horizontes de las secuencias A y C por debajo de 1m. El aumento de pH a esta profundidad genera un efecto desestabilizante para los coloides de arcilla, debido al incremento de cargas negativas, en la superficie de los minerales, que generan un efecto repulsivo entre partículas. 
+
+```{r plot_ero, echo = TRUE}
+
+strip_names <-c( "Limo %","CO %" ,"Na cmol/Kg", "Ca:Mg","CE dS/m","pH")
+
+xyplot(top ~ p.q50 | variable, 
+       groups = which,
+       data=CSeg,
+       ylab=list(label ='Profundidad (cm)', fontsize = 9.5),
+       xlab=list(label = ""),
+       lower=CSeg$p.q25, upper=CSeg$p.q75, ylim=c(400,-2),
+       panel=panel.depth_function2,
+       sync.colors=TRUE,
+       par.settings= sty,
+       prepanel=prepanel.depth_function,
+       layout=c(6,1), 
+       strip=strip.custom(bg= NA, 
+                          par.strip.text=list(font=2, 
+                                              cex=0.7, 
+                                              col= darken("#F5F2F1", 
+                                                          0.5, 
+                                                          space = "HCL")),
+                          factor.levels=strip_names),
+       scales=list(x=list(tick.number=3, alternating=1, relation='free', cex = 0.6), 
+                   y = list(tick.number=6)),
+       auto.key=list(columns=4, 
+                     lines=TRUE, 
+                     points=FALSE, 
+                     col = darken("#F5F2F1", 0.3, space = "HCL"),
+                     size = 2.5,
+                     font = 2)) #legend
+```
+
+`
+

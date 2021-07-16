@@ -12,7 +12,7 @@ output:
 
 ```{r setup_chunks, include=FALSE}
 
-knitr::opts_chunk$set(echo = TRUE,  warning = FALSE, echo = FALSE, fig.align="center",fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+knitr::opts_chunk$set(warning = FALSE, echo = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
 
 library(hrbrthemes)
 library(waffle) #gg_waffle
@@ -42,7 +42,6 @@ theme_update(strip.background = element_blank(),
              axis.ticks.y = element_blank(),
              #spacing between figures/blocks and outer rim
              plot.margin = margin(c(1,1,1,1)),
-             # "#F6F1EB" is 0.8 loghter than "#c3beb8"
              plot.background = element_rect(color =  "grey96",
                                             fill =  "grey96", 
                                             size = 2),
