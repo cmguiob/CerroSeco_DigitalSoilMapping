@@ -13,7 +13,7 @@ This is study aims to create a preliminary map of paleosol sequence distribution
  
 ## Output examples · *Ejemplos de resultados*
 
-### Where? · *¿Donde?*
+### Sampling locatios · *Ubicaciones de muestreo*
   ![Location Cerro Seco](https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png)
  
  ### Soil profiles · *Perfiles de suelo*
