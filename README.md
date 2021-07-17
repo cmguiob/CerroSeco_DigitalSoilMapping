@@ -17,7 +17,7 @@ This is study aims to create a preliminary map of paleosol sequence distribution
   ![Location Cerro Seco](https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png)
  
  ### Soil profiles · *Perfiles de suelo*
- ![Profiles Cerro Seco](https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png)
+ ![Profiles Cerro Seco](https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/02_TCI_CS_Output_localizaciones_files/figure-html/layout_perfiles-1.png)
  
  ### Mineralogical analyses · *Análisis mineralógicos*
  ![XRD Cerro Seco](https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Analisis/03_TCI_CS_Output_XRD_files/figure-html/layout_03-1.png)
