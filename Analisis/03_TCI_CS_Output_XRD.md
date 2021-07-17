@@ -31,6 +31,11 @@ library(showtext) #google fonts
 
 
 
+### Código: waffle legend
+
+
+
+
 ### Código: waffle chart de proporciones minerales
 
 
@@ -145,7 +150,7 @@ p_xrd_03 <- ggplot() +
                      sec.axis = sec_axis(~., breaks = mine_d_03,
                                          labels = mine_l_03))+
             facet_wrap(~ HZ, ncol = 1 ) + 
-            labs(x = "distancia interplanar (Angstrom)")+
+            labs(x = "Distancia interplanar (Angstrom)")+
             theme(plot.margin = margin(20, 70, 20, 10), #top, right, bottom, left
                   panel.grid = element_line(colour = "white"),
                   axis.ticks.x.top =element_line(
@@ -227,7 +232,7 @@ p_xrd_01 <- ggplot() +
                      sec.axis = sec_axis(~., breaks = mine_d_01,
                                          labels = mine_l_01))+
             facet_wrap(~ HZ, ncol = 1 ) + 
-            labs(x = "distancia interplanar (Angstrom)")+
+            labs(x = "Distancia interplanar (Angstrom)")+
             theme(plot.margin = margin(20, 70, 20, 10), #top, right, bottom, left
                   panel.grid = element_line(colour = "white"),
                   axis.ticks.x.top =element_line(
@@ -256,14 +261,14 @@ p_xrd_01 <- ggplot() +
 
 
 ```r
-p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5))
+p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5)) + inset_element(p_legend, -0.53, -0.35, -0.13, -0.01) # l, b, r, t
 ```
 
 <img src="03_TCI_CS_Output_XRD_files/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 ```r
-p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5))
+p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5)) + inset_element(p_legend, -0.53, -0.15, -0.13, 0) # l, b, r, t
 ```
 
 <img src="03_TCI_CS_Output_XRD_files/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
