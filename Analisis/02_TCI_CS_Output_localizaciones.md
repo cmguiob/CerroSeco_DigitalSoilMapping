@@ -27,6 +27,7 @@ library(colorspace) #lighten or darken colors
 library(ggrepel) #etiquetas 
 library(ggsn) #escala gráfica
 library(gggibbous) #moons with grain size %
+library(patchwork) #plot + inset
 ```
 
 \
@@ -391,10 +392,58 @@ head(hz_bdf, 10)
 ```
  
 \
+
+
+```r
+df_moon <- data.frame(x = 0, y = 0, ratio = c(0.25, 0.75), right = c(TRUE, FALSE))  
+
+p_moon <-  ggplot() +
+  geom_moon(data = df_moon[1,], 
+            aes(x = x , y = y ,ratio = ratio, right = right), 
+            size = 10, 
+            fill = darken("#c3beb8", 0.3, space = "HCL"),
+            color = darken("#c3beb8", 0.3, space = "HCL"))+
+  geom_text(data = df_moon[1,],
+            aes(x = x, y = y + 0.3, label = "25% arcilla"),
+            size = 3.5,
+            family = "roboto",
+            fontface = "bold",
+            col = darken("#c3beb8", 0.3, space = "HCL"))+
+    annotate(geom = "curve", 
+             x = 0.06, 
+             y = 0,
+             xend = 0.1, 
+             yend = 0.2, 
+             curvature = 0.4,
+             col = darken("#c3beb8", 0.3, space = "HCL"),
+             size = 0.5)+
+    geom_moon(data = df_moon[2,], 
+            aes(x = x , y = y ,ratio = ratio, right = right), 
+            size = 10, 
+            fill = lighten("#c3beb8", 0.1, space = "HCL"),
+            color = lighten("#c3beb8", 0.1, space = "HCL"))+
+  geom_text(data = df_moon[2,],
+            aes(x = x, y = y - 0.3, label = "75% arena & limo"),
+            size = 3.5,
+            family = "roboto",
+            fontface = "bold",
+            col = lighten("#c3beb8", 0.1, space = "HCL")) +
+    annotate(geom = "curve", 
+             x = -0.06, 
+             y = 0,
+             xend = -0.1, 
+             yend = -0.2, 
+             curvature = 0.4,
+             col = lighten("#c3beb8", 0.1, space = "HCL"),
+             size = 0.5)+
+    lims(x = c(-0.5,0.5), y = c(-1, 1))+
+  theme_void()
+```
+
  
 
 ```r
-perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
+p_perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
   geom_bar(position="stack", stat="identity", width = 0.35) +
   scale_fill_manual(values = rev(hz_bdf$RGBmx),
                     guide = FALSE) +
@@ -448,28 +497,12 @@ perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcat
                axis.ticks.x =  element_blank(),
         panel.grid.major.y = element_line(color = "#c3beb8", size = .4, linetype = c("13"))) +
   coord_cartesian(clip = "off")
-
-perfiles
 ```
-
-<img src="02_TCI_CS_Output_localizaciones_files/figure-html/profiles-1.png" width="75%" style="display: block; margin: auto;" />
 
 
 ```r
-library(pdftools)
+p_perfiles + inset_element(p_moon, 0.62, -0.17, 1.12, 0.53) # l, b, r, t
 ```
 
-```
-## Using poppler version 21.04.0
-```
-
-```r
-#Save
-#ggsave(paste(ruta,"Perfiles.pdf", sep = ""), plot = perfiles, height = 10, width = 15, device = cairo_pdf())
-
-#pdf_convert(pdf = "Perfiles.pdf", 
-#            filenames = paste(ruta,"Perfiles.png", sep = ""),
-#            format = "png", 
-#            dpi = 300)
-```
+<img src="02_TCI_CS_Output_localizaciones_files/figure-html/layout_perfiles-1.png" width="75%" style="display: block; margin: auto;" />
 
