@@ -2,7 +2,7 @@
 
 ![*Residual and buried paleosol in Cerro Seco (tepetate, cangahua)*](/IMG_20210307_110010.jpg)
 
- In this repository you will find:
+ ## In this repository you will find:
  * ### [Field and laboratory data](/Datos)
  * ### [Spatial data](/Datos_GIS)
  * ### [R code](/R)
