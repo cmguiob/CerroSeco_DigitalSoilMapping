@@ -5,7 +5,7 @@
  In this repository you will find:
  * ### [Field and laboratory data](/Datos)
  * ### [Spatial data](/Datos_GIS)
- * ### [Rmarkdown code](/R)
+ * ### [R code](/R)
  * ### [Simplified reports](/Reportes)
  * ### [Visualizations](/Graficas)
 
