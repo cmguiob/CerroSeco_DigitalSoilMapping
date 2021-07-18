@@ -2,6 +2,8 @@
 
 ![*Residual and buried paleosol in Cerro Seco (tepetate, cangahua)*](/IMG_20210307_110010.jpg)
 
+![estado](https://img.shields.io/badge/estado-activo-brightgreen&?style=for-the-badge&logo=appveyor) ![made-with-R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white) 
+
  ## In this repository you will find:
  * ### [Field and laboratory data](/Datos)
  * ### [Spatial data](/Datos_GIS)
