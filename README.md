@@ -1,10 +1,12 @@
 ![Residual and buried paleosol in Cerro Seco (tepetate, cangahua)](./IMG_20210307_110010.jpg)
 
-# Cerro Seco: soils/paleosols
+# Cerro Seco - Digital Soil Mapping
  In this repository you will find:
- * data
- * scripts with analysis 
- * visualizations 
+ * ### [Field and laboratory data](/Datos)
+ * ### [Spatial data](/Datos_GIS)
+ * ### [Rmarkdown code](/R)
+ * ### [Simplified reports](/Reportes)
+ * ### [Visualizations](/Graficas)
 
 
  The data comes from a citizen-based soil survey in the area known as Cerro Seco,  southern Bogotá. The project was **funded** by the *True Cost Initiative* through *Corporación Geoambiental Terrae (NGO)*. 
