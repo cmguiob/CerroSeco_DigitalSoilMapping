@@ -2,7 +2,7 @@
 
 ![*Residual and buried paleosol in Cerro Seco (tepetate, cangahua)*](/IMG_20210307_110010.jpg)
 
-![estado](https://img.shields.io/badge/estado-activo-brightgreen&?style=for-the-badge&logo=appveyor) ![made-with-R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white) 
+![estado](https://img.shields.io/badge/status-active-green&?style=for-the-badge&logo=appveyor) ![made-with-R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white) ![etapa](https://img.shields.io/badge/stage-modeling-yellow&?style=for-the-badge&logo=appveyor)
 
  ## In this repository you will find:
  * ### [Field and laboratory data](/Datos)
@@ -12,10 +12,10 @@
  * ### [Visualizations](/Graficas)
 
 
-The data comes from a citizen-based soil survey in the area known as Cerro Seco,  southern Bogotá. The project was **funded** by the *True Cost Initiative* through *Corporación Geoambiental Terrae (NGO)*. 
+The data comes from a citizen-based soil survey in the area known as Cerro Seco (southern Bogotá) carried out in 2020 and 2021. The project was **funded** by the *True Cost Initiative* through *Corporación Geoambiental Terrae (NGO)*. 
  
 This is study aims to create a preliminary digital map of paleosol sequence distribution in the area, using machine learning classification. It will be integrated with hydrological models of typical soil profiles and of the underlying rock, to make a first estimate of water recharge and overflow/interflow in the area. Information will be submitted to the *Departamento Distrital de Planeación* and the *Secretaría Distrital de Medio Ambiente* to support the creation and management of a new conservation area in Cerro Seco.
  
 ## Study locations · *Ubicaciones de estudio*
-  ![Location Cerro Seco](https://raw.githubusercontent.com/cmguiob/TERRAE_CerroSeco_DSM/main/Graficas/02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png)
+  ![Location Cerro Seco](Graficas/localizaciones.png)
  
