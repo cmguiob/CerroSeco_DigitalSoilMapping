@@ -14,7 +14,7 @@ editor_options:
 
 ```{r setup_chunks, warning = FALSE, message = FALSE}
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE,message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE,message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%", dev = "ragg_png")
 
 library(tidyverse)
 library(aqp)
@@ -35,15 +35,23 @@ sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSec
 #Select four profiles and relevant properties for plot
 hz4 <- hz[1:23,]
 
-#Crear colección
-depths(hz4) <- ID ~ TOPE + BASE 
-site(hz4) <- sitio
+```
 
-#Inicializar coordenadas
-coordinates(hz4) <- ~  long + lat
-aqp::proj4string(hz4) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
+```{r}
+hz4_temp <- hz %>%
+  dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04")) %>%
+  dplyr::filter(!is.na(ARENA)) %>%
+  dplyr::select(ID, HZ, ARENA, LIMO, ARCILLA ) 
+  
+vars_rosetta <- names(hz4_temp)[3:5]
+
+res_rosetta <- ROSETTA(hz4_temp, vars = vars_rosetta) %>%
+                  select(-ARENA, -LIMO, -ARCILLA)
+
+hz4 <- left_join(hz4, res_rosetta, by = c("ID", "HZ"))
 
 ```
+
 
 
 ```{r theme_setup}
@@ -174,8 +182,16 @@ sty$axis.text$fontfamily = "robotoc"
 
 ```{r prep_plot}
 
+#Crear colección
+depths(hz4) <- ID ~ TOPE + BASE 
+site(hz4) <- sitio
+
+#Inicializar coordenadas
+coordinates(hz4) <- ~  long + lat
+aqp::proj4string(hz4) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
+
 #Crear grupos para perfiles hidro
-CShidro <- slab(hz4, fm= ID ~ ARENA + LIMO + ARCILLA + CO + Fe_DCS + DENS_AP)
+CShidro <- slab(hz4, fm= ID ~ ARENA + LIMO + ARCILLA + DENS_AP + KSmedia_cmd + ksat)
 
 CShg <- make.groups(CS01 = CShidro[CShidro$ID == "CS01",], CS02 = CShidro[CShidro$ID == "CS02",], CS03 = CShidro[CShidro$ID== "CS03",], CS04 = CShidro[CShidro$ID== "CS04",])
 
@@ -200,7 +216,7 @@ CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == 
 ```{r plot_hidro, include = TRUE, echo = TRUE}
 
 # Nombres para paneles
-strip_names <-c( "Arena %", "Limo %","Arcilla %","CO %","Fe -di %", "Densidad")
+strip_names <-c( "Arena %", "Limo %","Arcilla %","Densidad", "Ks cm/día", "ksat")
 
 
 xyplot(top ~ p.q50 | variable, 
@@ -303,5 +319,10 @@ xyplot(top ~ p.q50 | variable,
                      font = 2)) #legend
 ```
 
-`
+```{r save}
+
+# how to save lattice plots?
+
+```
+
 
