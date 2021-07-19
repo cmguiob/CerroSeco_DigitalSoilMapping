@@ -17,5 +17,5 @@ The data comes from a citizen-based soil survey in the area known as Cerro Seco,
 This is study aims to create a preliminary digital map of paleosol sequence distribution in the area, using machine learning classification. It will be integrated with hydrological models of typical soil profiles and of the underlying rock, to make a first estimate of water recharge and overflow/interflow in the area. Information will be submitted to the *Departamento Distrital de Planeación* and the *Secretaría Distrital de Medio Ambiente* to support the creation and management of a new conservation area in Cerro Seco.
  
 ## Study locations · *Ubicaciones de estudio*
-  ![Location Cerro Seco](https://raw.githubusercontent.com/cmguiob/TERRAE_CerroSeco_DSM/main/Graficas/02_TCI_CS_Output_localizaciones_files/figure-html/map-1.png)
+  ![Location Cerro Seco](graficas/map-1.png)
  
