@@ -13,7 +13,7 @@ output:
 
 ```{r setup, message=FALSE, warning=FALSE}
 
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.showtext = T, fig.retina = 1, fig.align = 'center', dpi = 300, out.width = "75%", dev = "ragg_png")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%", dev = "ragg_png")
 
 library(tidyverse)
 library(rgdal) #leer polígono
@@ -259,6 +259,8 @@ p_localizaciones <- ggplot() +
   # Tamaño de ícono color
   guides(color = guide_legend(override.aes = list(size = 3.5))) 
 
+p_localizaciones
+
 ```
 
 \
@@ -411,18 +413,19 @@ p_perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forc
 
 ```
 
-```{r layout_perfiles}
+```{r layout_perfiles, include = TRUE, echo = TRUE}
 
 p_layout <- p_perfiles + inset_element(p_moon, 0.62, -0.17, 1.12, 0.53) # l, b, r, t
 
+p_layout
 ```
 
 ```{r save}
 
 
-ggsave(file = "localizaciones.png", plot = p_localizaciones, device = device = ragg::agg_png, path = here::here("graficas"), width = 8, height = 8, units = "cm", dpi = 300)
+ggsave(file = "localizaciones.png", plot = p_localizaciones, device = ragg::agg_png, path = here::here("graficas"), dpi = 300)
 
-ggsave(file = "perfiles.png", plot = p_layout, device = device = ragg::agg_png, path = here::here("graficas"), width = 10, height = 5, units = "cm", dpi = 300)
+ggsave(file = "perfiles.png", plot = p_layout, device = ragg::agg_png, path = here::here("graficas"), dpi = 300)
 
 ```
 
