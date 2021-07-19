@@ -22,7 +22,11 @@ library(sp)
 library(lattice)
 library(colorspace)
 library(showtext) #google fonts
+library(soilDB)
 ```
+
+
+
 
 
 
@@ -42,7 +46,7 @@ library(showtext) #google fonts
 
 ```r
 # Nombres para paneles
-strip_names <-c( "Arena %", "Limo %","Arcilla %","Fe -di %", "Densidad", "Ks cm/día")
+strip_names <-c( "Arena %", "Limo %","Arcilla %","Densidad", "Ks cm/día", "Ks ROSETTA")
 
 
 xyplot(top ~ p.q50 | variable, 

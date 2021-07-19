@@ -22,6 +22,8 @@ library(sp)
 library(lattice)
 library(colorspace)
 library(showtext) #google fonts
+library(soilDB)
+
 ```
 
 
@@ -45,7 +47,7 @@ hz4_temp <- hz %>%
   
 vars_rosetta <- names(hz4_temp)[3:5]
 
-res_rosetta <- ROSETTA(hz4_temp, vars = vars_rosetta) %>%
+res_rosetta <- ROSETTA(hz4_temp, vars = vars_rosetta, v = '1') %>%
                   select(-ARENA, -LIMO, -ARCILLA)
 
 hz4 <- left_join(hz4, res_rosetta, by = c("ID", "HZ"))
@@ -216,7 +218,7 @@ CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == 
 ```{r plot_hidro, include = TRUE, echo = TRUE}
 
 # Nombres para paneles
-strip_names <-c( "Arena %", "Limo %","Arcilla %","Densidad", "Ks cm/día", "ksat")
+strip_names <-c( "Arena %", "Limo %","Arcilla %","Densidad", "Ks cm/día", "Ks ROSETTA")
 
 
 xyplot(top ~ p.q50 | variable, 
