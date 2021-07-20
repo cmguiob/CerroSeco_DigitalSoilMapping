@@ -1,26 +1,3 @@
----
-title: "TCI - Cerro Seco / Suelos"
-subtitle: "Localizaciones y perfiles"
-author: "Carlos Guio"
-date: "`r Sys.Date()`"
-knit: (function(inputFile, encoding) { 
-      out_dir <- 'Reportes';
-      rmarkdown::render(input = inputFile,
-                        encoding = encoding, 
-                        output_file = file.path(
-                                        here::here(), 
-                                        out_dir, 
-                                        '02_TCI_CS_Localizaciones.html'))
-                                        })
-output:
-  html_document:
-    theme: journal
-    highlight: tango
-    keep_md: true
----
-
-
-```{r setup, message=FALSE, warning=FALSE}
 
 library(tidyverse)
 library(rgdal) #leer polígono
@@ -38,22 +15,7 @@ library(patchwork) #plot + inset
 
 knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%", dev = "ragg_png")
 
-```
 
-\
-
-## Los datos
-
-El levantamiento de suelos se realizó con colaboración de  miembros de la comunidad local: en la medición de perfiles, registro del color y la estructura. La base de datos está compuesta por 62 perfiles con información en diferente detalle: 
-
-* 4 perfiles con datos completos de campo y laboratorio
-* 27 perfiles con datos de campo parciales, e.g. profundidad, nomenclatura de horizontes y color.
-* 31 perfiles con registro fotográfico.
-
-Los perfiles de suelo estudiados en detalle y en campo se utilizaron para interpretar los perfiles que solo contaban con registro fotográfico. De esta interpretación se generalizaron dos tipos de secuencias de horizontes de suelos y paleosuelos, las cuales tienen relevancia para la infiltración de agua, el soporte de la vegetación y los procesos erosivos que modelan el paisaje.
-
-
-```{r data}
 
 # Cargar datos de perfiles
 hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
@@ -103,11 +65,7 @@ calles <- getbb("Bogotá")%>%
                             "residential", "living_street",
                             "footway")) %>%  osmdata_sf()
 
-```
 
-
-
-```{r prep_circle}
 
 # Calcular centroide
 centro_sf <- st_centroid(CSsf84)
@@ -135,15 +93,7 @@ cutout <- st_intersection(calles$osm_lines, circle_sf)
 
 
 
-```
 
-## La distribución de los perfiles
-
-Debido a la accesibilidad a diferentes zonas, los perfiles de suelo estudiados corresponden a exposiciones naturales, en cárcavas, a lo largo de una franja orientada SO-NE. En la figura se descatan cuatro perfiles, los cuales se estudiaron mediante técnicas de campo y laboratorio.
-
-\ 
-
-```{r theme}
 
 # Posibles escalas de color
 col_scp <- c('#6AB6AA', '#4B6E8E', '#F9C93C', '#DA7543')
@@ -176,10 +126,7 @@ theme_update(panel.grid = element_blank(),
                                         face = "bold"),
              legend.key.size = unit(0.8, "cm"))
 
-```
 
-
-```{r map, include = TRUE, echo = TRUE}
 
 p_localizaciones <- ggplot() +
   geom_sf(data = cutout,
@@ -269,13 +216,8 @@ p_localizaciones <- ggplot() +
 
 p_localizaciones
 
-```
 
-
-```{r save}
 
 
 ggsave(file = "localizaciones.png", plot = p_localizaciones, device = ragg::agg_png, path = here::here("graficas"), dpi = 300)
-
-```
 
