@@ -315,7 +315,7 @@ p_layout_01 <- p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5)) + inset_el
 p_layout_01
 ```
 
-<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\TERRAE_CerroSeco_DSM_git\Reportes\05_TCI_CS_Mineralogia_files/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\TERRAE~1\Reportes\05_TCI~1/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 ```r
@@ -324,7 +324,7 @@ p_layout_03 <-p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5)) + inset_ele
 p_layout_03
 ```
 
-<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\TERRAE_CerroSeco_DSM_git\Reportes\05_TCI_CS_Mineralogia_files/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\TERRAE~1\Reportes\05_TCI~1/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 
