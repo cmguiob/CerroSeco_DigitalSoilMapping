@@ -3,6 +3,15 @@ title: "TCI - Cerro Seco / Suelos"
 subtitle: "Resultados XRD"
 author: "Carlos Guio"
 date: "10.7.2021"
+knit: (function(inputFile, encoding) { 
+      out_dir <- 'Reportes';
+      rmarkdown::render(input = inputFile,
+                        encoding = encoding, 
+                        output_file = file.path(
+                                        here::here(), 
+                                        out_dir, 
+                                        '05_TCI_CS_Mineralogia.html'))
+                                        })
 output:
   html_document:
     theme: journal
@@ -306,7 +315,7 @@ p_layout_01 <- p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5)) + inset_el
 p_layout_01
 ```
 
-<img src="03_TCI_CS_Output_XRD_files/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\TERRAE_CerroSeco_DSM_git\Reportes\05_TCI_CS_Mineralogia_files/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 ```r
@@ -315,7 +324,7 @@ p_layout_03 <-p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5)) + inset_ele
 p_layout_03
 ```
 
-<img src="03_TCI_CS_Output_XRD_files/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\TERRAE_CerroSeco_DSM_git\Reportes\05_TCI_CS_Mineralogia_files/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 

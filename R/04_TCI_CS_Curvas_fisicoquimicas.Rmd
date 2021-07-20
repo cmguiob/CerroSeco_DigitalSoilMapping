@@ -3,6 +3,15 @@ title: "TCI - Cerro Seco / Suelos"
 subtitle: "Perfiles de propiedades fisicoqiímicas"
 author: "Carlos Guio"
 date: "14.07.2021"
+knit: (function(inputFile, encoding) { 
+      out_dir <- 'Reportes';
+      rmarkdown::render(input = inputFile,
+                        encoding = encoding, 
+                        output_file = file.path(
+                                        here::here(), 
+                                        out_dir, 
+                                        '04_TCI_CS_Curvas_fisicoquimicas.html'))
+                                        })
 output:
   html_document:
     theme: journal
@@ -12,9 +21,10 @@ editor_options:
   chunk_output_type: console
 ---
 
+
 ```{r setup_chunks, warning = FALSE, message = FALSE}
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE,message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%", dev = "ragg_png")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%", dev = "ragg_png")
 
 library(tidyverse)
 library(aqp)
@@ -23,8 +33,10 @@ library(lattice)
 library(colorspace)
 library(showtext) #google fonts
 library(soilDB)
+library(latticeExtra)
 
 ```
+
 
 
 ```{r prep_data}
@@ -39,15 +51,16 @@ hz4 <- hz[1:23,]
 
 ```
 
-```{r}
+```{r prep_rosetta}
 hz4_temp <- hz %>%
   dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04")) %>%
-  dplyr::filter(!is.na(ARENA)) %>%
+  dplyr::filter(!is.na(ARENA)) %>%  
   dplyr::select(ID, HZ, ARENA, LIMO, ARCILLA ) 
   
 vars_rosetta <- names(hz4_temp)[3:5]
 
-res_rosetta <- ROSETTA(hz4_temp, vars = vars_rosetta, v = '1') %>%
+# ksat está en log10 de cm/dia
+res_rosetta <- ROSETTA(hz4_temp, vars = vars_rosetta, v = '3') %>%
                   select(-ARENA, -LIMO, -ARCILLA)
 
 hz4 <- left_join(hz4, res_rosetta, by = c("ID", "HZ"))
@@ -158,24 +171,94 @@ font_add_google(name = "Roboto", family= "roboto")
 
 # Other trellis parameters
 # Use to explore: str(trellis.par.get(), max.level = 2)
-sty <- list()
-sty$strip.border$col <- NA
-sty$strip.background$col <- NA
-sty$superpose.line$col <- c('#6AB6AA', '#4B6E8E', '#DA7543', '#DA7543')
-sty$superpose.line$lty <- c(1,1,1,2) #property lines
-sty$superpose.line$lwd <- 2.5
-sty$layout.heights$strip <-1.5
-sty$grid.pars$fontfamily <- "roboto"
-sty$axis.components$right$tck <- 0
-sty$axis.components$left$tck <- 0.5
-sty$axis.components$bottom$tck <- 0.5
-sty$axis.line$col <- darken("#F5F2F1", 0.3, space = "HCL")
-sty$par.ylab.text$col = darken("#F5F2F1", 0.3, space = "HCL")
-sty$axis.text$col = darken("#F5F2F1", 0.3, space = "HCL")
-sty$axis.text$fontfamily = "robotoc"
+
+
+#Style for curves plot
+sty_c <- list()
+sty_c$strip.border$col <- NA
+sty_c$strip.background$col <- NA
+sty_c$superpose.line$lwd <- 2
+sty_c$superpose.line$col <- c("#F6BE17", "#EBC16F", "#DEC398", "#C9C6C2", "#A7C2D7", "#7BAFD2", "#66AFEC")
+sty_c$layout.heights$strip <-1.5
+sty_c$grid.pars$fontfamily <- "roboto"
+sty_c$axis.components$right$tck <- 0
+sty_c$axis.components$left$tck <- 0.5
+sty_c$axis.components$bottom$tck <- 0.5
+sty_c$axis.components$top$tck <- 0
+sty_c$axis.components$top$text <- NA
+sty_c$axis.line$col <- darken("#F5F2F1", 0.3, space = "HCL")
+sty_c$par.ylab.text$col = darken("#F5F2F1", 0.3, space = "HCL")
+sty_c$par.ylab.text$fontfamily = "roboto"
+sty_c$par.xlab.text$col = darken("#F5F2F1", 0.3, space = "HCL")
+sty_c$axis.text$col = darken("#F5F2F1", 0.3, space = "HCL")
+sty_c$axis.text$fontfamily = "robotoc"
+
+
+#Style for profile plots
+sty_p <- list()
+sty_p$strip.border$col <- NA
+sty_p$strip.background$col <- NA
+sty_p$superpose.line$col <- c('#6AB6AA', '#4B6E8E', '#DA7543', '#DA7543')
+sty_p$superpose.line$lty <- c(1,1,1,2) #property lines
+sty_p$superpose.line$lwd <- 2.5
+sty_p$layout.heights$strip <-1.5
+sty_p$grid.pars$fontfamily <- "roboto"
+sty_p$axis.components$right$tck <- 0
+sty_p$axis.components$left$tck <- 0.5
+sty_p$axis.components$bottom$tck <- 0.5
+sty_p$axis.line$col <- darken("#F5F2F1", 0.3, space = "HCL")
+sty_p$par.ylab.text$col = darken("#F5F2F1", 0.3, space = "HCL")
+sty_p$par.ylab.text$fontfamily = "roboto"
+sty_p$axis.text$col = darken("#F5F2F1", 0.3, space = "HCL")
+sty_p$axis.text$fontfamily = "robotoc"
 
 
 
+```
+
+
+## Curvas de retención idealizadas
+
+```{r plot_retencion, include = TRUE, echo = TRUE}
+
+res <- lapply(1:nrow(res_rosetta), function(i) {
+  
+  # model bounds are given in kPA of suction
+  vg <- KSSL_VG_model(VG_params = res_rosetta[i, ], phi_min = 10^-3, phi_max=10^6)
+  
+  # extract curve and add texture ID
+  m <- vg$VG_curve
+  m$HZ <- res_rosetta$HZ[i]
+  m$ID <- res_rosetta$ID[i]
+  
+  return(m)
+})
+
+res <- do.call('rbind', res)
+
+
+xyplot(
+  phi ~ theta | ID, data = res, groups = HZ,
+    type = c('l'),
+  panel = function(...) {panel.xyplot(...)
+                         panel.grid(lty = 3, col = "#DAD7D6")},
+  scales = list(alternating=1, 
+                x=list(tick.number=3), 
+                y=list(log=10, tick.number=5), 
+                cex = 0.8), 
+  yscale.components = yscale.components.logpower, 
+  ylab = expression(Potencial~~matricial~~(-kPa)), 
+  xlab = expression(Contenido~volumetrico~agua~~(cm^3/cm^3)), 
+  par.settings = sty_c, 
+  strip=strip.custom(bg= NA, 
+                          par.strip.text=list(font=2, 
+                                              cex=0.7, 
+                                              col= darken("#F5F2F1", 
+                                                          0.5, 
+                                                          space = "HCL"))), 
+  as.table = TRUE,
+    layout = c(4,1)
+)
 ```
 
 
@@ -229,7 +312,7 @@ xyplot(top ~ p.q50 | variable,
        lower=CShg$p.q25, upper=CShg$p.q75, ylim=c(400,-2),
        panel=panel.depth_function2,
        sync.colors=TRUE,
-       par.settings= sty,
+       par.settings= sty_p,
        prepanel=prepanel.depth_function,
        layout=c(6,1), 
        strip=strip.custom(bg= NA, 
@@ -266,7 +349,7 @@ xyplot(top ~ p.q50 | variable,
        lower=CSbg$p.q25, upper=CSbg$p.q75, ylim=c(200,-2),
        panel=panel.depth_function2,
        sync.colors=TRUE,
-       par.settings= sty,
+       par.settings= sty_p,
        prepanel=prepanel.depth_function,
        layout=c(6,1), 
        strip=strip.custom(bg= NA, 
@@ -301,7 +384,7 @@ xyplot(top ~ p.q50 | variable,
        lower=CSeg$p.q25, upper=CSeg$p.q75, ylim=c(400,-2),
        panel=panel.depth_function2,
        sync.colors=TRUE,
-       par.settings= sty,
+       par.settings= sty_p,
        prepanel=prepanel.depth_function,
        layout=c(6,1), 
        strip=strip.custom(bg= NA, 
