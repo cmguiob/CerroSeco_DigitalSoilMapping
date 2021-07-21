@@ -13,8 +13,9 @@ library(ggsn) #escala gráfica
 library(gggibbous) #moons with grain size %
 library(patchwork) #plot + inset
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%", dev = "ragg_png")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
 
+showtext_auto()
 
 
 # Cargar datos de perfiles
@@ -201,5 +202,5 @@ p_layout
 
 
 
-ggsave(file = "perfiles.png", plot = p_layout, device = ragg::agg_png, path = here::here("graficas"), dpi = 300)
+ggsave(file = "perfiles.png", plot = p_layout, device = "png", type = "cairo", path = here::here("graficas"), dpi = 300)
 

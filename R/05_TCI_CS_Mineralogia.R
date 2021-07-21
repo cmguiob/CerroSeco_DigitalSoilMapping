@@ -1,4 +1,3 @@
-## ----setup_chunks, warning = FALSE, message = FALSE----------------------------------------
 
 library(hrbrthemes)
 library(waffle) #gg_waffle
@@ -10,12 +9,11 @@ library(tidyverse)
 library(patchwork) #plot layout
 library(showtext) #google fonts
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%", dev = "ragg_png")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+
+showtext_auto()
 
 
-
-
-## ----setup_plot----------------------------------------------------------------------------
 
 # Obtener fuentes
 font_add_google(name = "Roboto Condensed", family= "robotoc")
@@ -45,8 +43,6 @@ theme_update(strip.background = element_blank(),
 
 
 
-
-## ----prep_waffle---------------------------------------------------------------------------
 
 riet <- readr::read_csv("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Difraccion/CS_Rietvelt.csv")
 
@@ -83,8 +79,6 @@ riet_01  <- riet %>%
 
 
 
-
-## ----plot_legend, include = TRUE, echo = TRUE----------------------------------------------
 df_legend <- data.frame(x = seq(-0.45,0.45, by = 0.1 ), 
                  y = 0, 
                  cls = c(rep(lighten("#c3beb8", 0.2, space = "HCL"), 9),
@@ -125,8 +119,6 @@ p_legend <-
   theme_void() 
 
 
-
-## ----plot_waffle, include = TRUE, echo = TRUE----------------------------------------------
 
 p_riet_03 <- riet_03 %>%
   ggplot() +
@@ -179,8 +171,6 @@ p_riet_01 <- riet_01 %>%
 
 
 
-## ----prep_dicfracto------------------------------------------------------------------------
-
 ruta <- "C:/Users/cguio/Documents/Terrae/TCI_Cerro Seco/"
 
 files_list <- list.files(path = (paste(ruta,"Datos/Difraccion/", sep = "")), pattern = ".*xy$")
@@ -231,8 +221,6 @@ DRX_df <- file_name[] %>%
 
 
 
-
-## ----plot_xrd_03, include = TRUE, echo = TRUE----------------------------------------------
 
 mine_d_03 <- c(15, 10, 7.3, 4.5, 4.25, 4.175, 4.05, 3.75, 3.55, 3.35, 
             3.2, 2.98,2.71, 2.58, 2.52, 2.45)
@@ -314,8 +302,6 @@ p_xrd_03 <- ggplot() +
 
 
 
-## ----plot_xrd_01, include = TRUE, echo = TRUE----------------------------------------------
-
 mine_d_01 <- c(7.3, 4.5, 4.25, 4.175, 4.05, 3.75, 3.55, 3.35, 
             3.2, 2.98,2.71, 2.58, 2.52, 2.45)
 mine_l_01 <- c("K/H", "","","G","C","F","","Q", "", "Hb" ,"He","","", "")
@@ -395,24 +381,17 @@ p_xrd_01 <- ggplot() +
 
 
 
-## ----layout_01, fig.width = 5.8, fig.height= 3.8, include = TRUE, echo = TRUE--------------
-
 p_layout_01 <- p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5)) + inset_element(p_legend, -0.53, -0.29, -0.13, -0.01) # l, b, r, t
 
 p_layout_01
 
 
-
-## ----layout_03, fig.width= 5.8, fig.height= 5.75, include = TRUE, echo = TRUE--------------
 p_layout_03 <-p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5)) + inset_element(p_legend, -0.53, -0.17, -0.13, -0.01) # l, b, r, t
 
 p_layout_03
 
 
-## ------------------------------------------------------------------------------------------
+ggsave(file = "mineralogia_01.png", plot = p_layout_01, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 5.8, height = 3.8)
 
-ggsave(file = "XRD_01.png", plot = p_layout_01, device = ragg::agg_png, path = here::here("graficas"), dpi = 300, width = 5.8, height = 3.8)
-
-ggsave(file = "XRD_03.png", plot = p_layout_03, device = ragg::agg_png, path = here::here("graficas"), dpi = 300, width = 5.8, height = 5.75)
-
+ggsave(file = "mineralogia_03.png", plot = p_layout_03, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 5.8, height = 5.75)
 
