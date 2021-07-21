@@ -36,7 +36,9 @@ library(ggsn) #escala gráfica
 library(gggibbous) #moons with grain size %
 library(patchwork) #plot + inset
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%", dev = "ragg_png")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+
+showtext_auto()
 ```
 
 
@@ -122,7 +124,7 @@ p_layout <- p_perfiles + inset_element(p_moon, 0.62, -0.17, 1.12, 0.53) # l, b, 
 p_layout
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\TERRAE~1\Reportes\03_TCI~1/figure-html/layout_perfiles-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\03_TCI~1/figure-html/layout_perfiles-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 

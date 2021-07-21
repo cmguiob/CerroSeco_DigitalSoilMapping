@@ -31,8 +31,9 @@ library(tidyverse)
 library(patchwork) #plot layout
 library(showtext) #google fonts
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%", dev = "ragg_png")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
 
+showtext_auto()
 
 ```
 
@@ -446,9 +447,9 @@ p_layout_03
 
 ```{r}
 
-ggsave(file = "XRD_01.png", plot = p_layout_01, device = ragg::agg_png, path = here::here("graficas"), dpi = 300, width = 5.8, height = 3.8)
+ggsave(file = "mineralogia_01.png", plot = p_layout_01, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 5.8, height = 3.8)
 
-ggsave(file = "XRD_03.png", plot = p_layout_03, device = ragg::agg_png, path = here::here("graficas"), dpi = 300, width = 5.8, height = 5.75)
+ggsave(file = "mineralogia_03.png", plot = p_layout_03, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 5.8, height = 5.75)
 
 ```
 

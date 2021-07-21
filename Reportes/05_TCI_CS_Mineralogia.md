@@ -31,7 +31,9 @@ library(tidyverse)
 library(patchwork) #plot layout
 library(showtext) #google fonts
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%", dev = "ragg_png", purl = TRUE)
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+
+showtext_auto()
 ```
 
 
@@ -315,7 +317,7 @@ p_layout_01 <- p_riet_01 + p_xrd_01 + plot_layout(widths = c(1, 3.5)) + inset_el
 p_layout_01
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\TERRAE~1\Reportes\05_TCI~1/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\05_TCI~1/figure-html/layout_01-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 ```r
@@ -324,7 +326,7 @@ p_layout_03 <-p_riet_03 + p_xrd_03 + plot_layout(widths = c(1, 3.5)) + inset_ele
 p_layout_03
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\TERRAE~1\Reportes\05_TCI~1/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\05_TCI~1/figure-html/layout_03-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 
