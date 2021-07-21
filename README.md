@@ -12,7 +12,7 @@
  * ### [Visualizations](/Graficas)
 
 
-The data comes from a citizen-based soil survey in the area known as [Cerro Seco](https://goo.gl/maps/C2dALBSiKC8B5a4k9) (southern Bogotá) carried out in 2020 and 2021. The project was **funded** by the [*True Cost Initiative*](https://truecostsinitiative.org/) through [*Corporación Geoambiental Terrae (NGO)*](https://www.terraegeoambiental.org/). 
+The data comes from a citizen-based soil survey in the area known as [Cerro Seco](https://goo.gl/maps/C2dALBSiKC8B5a4k9) (southern Bogotá). It was collected between 06.2020 and 07.2021. **Funds** for this project were given by the [*True Cost Initiative*](https://truecostsinitiative.org/) to [*Corporación Geoambiental Terrae (NGO)*](https://www.terraegeoambiental.org/), with whom I collaborate.
  
 This study aims to create a preliminary map of soil (paleosol) sequence distribution in the area, using machine learning classification. It will be integrated with hydrological models of typical soil profiles and of the underlying rock, to make a first estimate of water recharge and overflow/interflow in the area. Information will be submitted to the *Secretaría Distrital de Planeación* and the *Secretaría Distrital de Ambiente* to support the creation and management of a new conservation area in Cerro Seco.
  
