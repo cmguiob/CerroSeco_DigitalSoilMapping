@@ -25,6 +25,7 @@ library(tidyverse)
 library(rgdal) #leer polígono
 library(sf) #manipular objetos espaciales tipo sf
 library(raster) #manipular objetos raster
+library(showtext)
 
 knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
 
@@ -35,27 +36,70 @@ showtext_auto()
 
 ```{r read_data}
 
-#read compressed raster topographic indices directly into r
+#Cargar raster de variables topograficas ---------------------------------------
 
-#create temporary file and directory
-temp <- tempfile() 
+temp <- tempfile() #Crear objetos temporales
 tempd <- tempdir()
 
-#Download
-url <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/DEM_derivados/Indices_terreno_SAGA.zip?raw=true"
-download.file(url,temp, mode="wb") #mode necessary for windows
+url_topo <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/DEM_derivados/Indices_terreno_SAGA.zip?raw=true"
 
-#Unzip
-unzip(temp, exdir=tempd)
+download.file(url_topo,temp, mode="wb") ##Descargar: mode necesario para windows
 
-#Prepare for reading as stack
-files_names <- list.files(tempd, pattern = "*.tif")
-files_list <- paste(file.path(tempd), files_names[], sep = "\\")
-topoind <- stack(files_list)
+unzip(temp, exdir=tempd) #Descomprimir
 
-#Disconnect from temporary file and directory
-unlink(tempd)
-unlink(temp)
+files_names <- list.files(tempd, pattern = "*.tif") #Leer nombres de archivos
+files_paths <- paste(file.path(tempd), files_names[], sep = "\\") #Crear rutas
+
+topoind <- stack(files_paths)
+
+#--------------------------------------------------------------------------------
+
+#Cargar raster de sentinel 
+
+url_s2 <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/S2A_MSIL2A_20200109T152631_subset_resampled10.zip?raw=true"
+
+download.file(url_s2, temp, mode="wb") ##Descargar: mode necesario para windows
+
+unzip(temp, exdir = tempd) #Descomprimir
+
+files_names2 <- list.files(tempd, pattern = "*resampled10.tif") #Leer nombres de archivos
+files_paths2 <- paste(file.path(tempd), files_names2[], sep = "\\") #Crear rutas
+
+s2 <- stack(files_paths2)
+#Rename sentinel stack bands
+
+#------------------------------------------------------------------------------
+
+
+# Cargar ubicaciones
+sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
+
+# Cargar poligonos mineria 2019 como sf
+url_mineria <- ("https://raw.githubusercontent.com/cmguiob/TERRAE_CerroSeco_DSM/main/Datos_GIS/Poligonos/mineria_2019_CS_WGS84.geojson")
+min2019sf <- st_read(url_mineria)
+
+#Cargar poligono CS como sf
+url_limite <- "https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/limite_CS_WGS84.geojson"
+CSsf84 <- st_read(url_limite)
+
+
+```
+
+```{r prep, include = TRUE, echo = TRUE}
+
+# Renombrar
+names(topoind) <- c("ASE", "ASN", "DEM","DSC", "FLA", "FLD", "LSF", "MPI",
+                    "PLC", "PRC", "RSP", "SLP", "TPI", "TRI1", "TRI5", "TWI", "USC", 
+                    "VDN", "WSB") #Rename stack layers
+
+names(s2) <- c("B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12") 
+
+
+# Crear NDVI
+NDVI <- (s2[[7]] - s2[[3]]) / (s2[[7]] + s2[[3]])
+names(NDVI) <- "NDVI"
+
+
 
 ```
 

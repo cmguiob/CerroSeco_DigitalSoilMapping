@@ -72,10 +72,10 @@ url_limite <- "https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/
 CSsf84 <- st_read(url_limite)
 
 #Poligons were loaded first from local pc as .shp and then transformed to .geojson
-#writeOGR(CS_limite, "limite_CS_WGS84.geojson", layer = "limite_CS_WGS84" driver = )
+#writeOGR(CS_limite, "limite_CS_WGS84.geojson", layer = "limite_CS_WGS84" driver = "GeoJSON")
 
 # Cargar poligonos mineria 2019 como sf
-url_mineria <- ("https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos_GIS/Poligonos/mineria_2019_CS_WGS84.geojson")
+url_mineria <- ("https://raw.githubusercontent.com/cmguiob/TERRAE_CerroSeco_DSM/main/Datos_GIS/Poligonos/mineria_2019_CS_WGS84.geojson")
 min2019sf <- st_read(url_mineria)
 
 # Cargar DEM y transformar a data frame para manipular con ggplot
