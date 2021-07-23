@@ -10,7 +10,7 @@ knit: (function(inputFile, encoding) {
                         output_file = file.path(
                                         here::here(), 
                                         out_dir, 
-                                        '05_TCI_CS_Covariables.html'))
+                                        '05_TCI_CS_Modelos_ML.html'))
                                         })
 output:
   html_document:
@@ -42,11 +42,11 @@ temp <- tempfile()
 tempd <- tempdir()
 
 #Download
-url <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/DEM_derivados/Indices_terreno.zip?raw=true"
+url <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/DEM_derivados/Indices_terreno_SAGA.zip?raw=true"
 download.file(url,temp, mode="wb") #mode necessary for windows
 
 #Unzip
-unzip(temp, exdir=tempd)#
+unzip(temp, exdir=tempd)
 
 #Prepare for reading as stack
 files_names <- list.files(tempd, pattern = "*.tif")
@@ -58,4 +58,6 @@ unlink(tempd)
 unlink(temp)
 
 ```
+
+
 
