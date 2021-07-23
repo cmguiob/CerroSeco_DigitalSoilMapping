@@ -33,18 +33,29 @@ showtext_auto()
 ```
 
 
-```{r}
+```{r read_data}
 
-temp <- tempfile()
+#read compressed raster topographic indices directly into r
+
+#create temporary file and directory
+temp <- tempfile() 
 tempd <- tempdir()
 
-#download worldclim climate data
-url <- "http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/tmean_10m_esri.zip"
+#Download
+url <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/DEM_derivados/Indices_terreno.zip?raw=true"
 download.file(url,temp, mode="wb") #mode necessary for windows
 
-unzip(temp, exdir=tempd)
-tmean_raster <- raster(file.path(tempd, "tmean/tmean_9"))
+#Unzip
+unzip(temp, exdir=tempd)#
+
+#Prepare for reading as stack
+files_names <- list.files(tempd, pattern = "*.tif")
+files_list <- paste(file.path(tempd), files_names[], sep = "\\")
+topoind <- stack(files_list)
+
+#Disconnect from temporary file and directory
 unlink(tempd)
+unlink(temp)
 
 ```
 
