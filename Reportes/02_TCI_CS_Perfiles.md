@@ -10,7 +10,7 @@ knit: (function(inputFile, encoding) {
                         output_file = file.path(
                                         here::here(), 
                                         out_dir, 
-                                        '03_TCI_CS_Perfiles.html'))
+                                        '02_TCI_CS_Perfiles.html'))
                                         })
 output:
   html_document:
@@ -124,7 +124,7 @@ p_layout <- p_perfiles + inset_element(p_moon, 0.62, -0.17, 1.12, 0.53) # l, b, 
 p_layout
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\03_TCI~1/figure-html/layout_perfiles-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\_Git\Reportes\02_TCI_CS_Perfiles_files/figure-html/layout_perfiles-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 

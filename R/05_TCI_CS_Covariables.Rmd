@@ -1,0 +1,50 @@
+---
+title: "TCI - Cerro Seco / Suelos"
+subtitle: "Covariables"
+author: "Carlos Guio"
+date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) { 
+      out_dir <- 'Reportes';
+      rmarkdown::render(input = inputFile,
+                        encoding = encoding, 
+                        output_file = file.path(
+                                        here::here(), 
+                                        out_dir, 
+                                        '05_TCI_CS_Covariables.html'))
+                                        })
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+    keep_md: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(rgdal) #leer polígono
+library(sf) #manipular objetos espaciales tipo sf
+library(raster) #manipular objetos raster
+
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "70%")
+
+showtext_auto()
+
+```
+
+
+```{r}
+
+temp <- tempfile()
+tempd <- tempdir()
+
+#download worldclim climate data
+url <- "http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/tmean_10m_esri.zip"
+download.file(url,temp, mode="wb") #mode necessary for windows
+
+unzip(temp, exdir=tempd)
+tmean_raster <- raster(file.path(tempd, "tmean/tmean_9"))
+unlink(tempd)
+
+```
+

@@ -10,7 +10,7 @@ knit: (function(inputFile, encoding) {
                         output_file = file.path(
                                         here::here(), 
                                         out_dir, 
-                                        '04_TCI_CS_Curvas_fisicoquimicas.html'))
+                                        '03_TCI_CS_Curvas_fisicoquimicas.html'))
                                         })
 output:
   html_document:
@@ -80,7 +80,7 @@ plot_curvas<- xyplot(
 plot_curvas
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\04_TCI~1/figure-html/plot_retencion-1.png" width="75%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\_Git\Reportes\03_TCI_CS_Curvas_fisicoquimicas_files/figure-html/plot_retencion-1.png" width="75%" style="display: block; margin: auto;" />
 
 
 ## Las propiedades 
@@ -126,7 +126,7 @@ plot_hidro <- xyplot(top ~ p.q50 | variable,
 plot_hidro
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\04_TCI~1/figure-html/plot_hidro-1.png" width="75%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\_Git\Reportes\03_TCI_CS_Curvas_fisicoquimicas_files/figure-html/plot_hidro-1.png" width="75%" style="display: block; margin: auto;" />
 
 ### Código: xyplot
 #### Propiedades relevantes para vegetación
@@ -165,7 +165,7 @@ plot_bio <- xyplot(top ~ p.q50 | variable,
 plot_bio
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\04_TCI~1/figure-html/plot_bio-1.png" width="75%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\_Git\Reportes\03_TCI_CS_Curvas_fisicoquimicas_files/figure-html/plot_bio-1.png" width="75%" style="display: block; margin: auto;" />
 
 ### Código: xyplot
 #### Propiedades relevantes para erosión
@@ -204,7 +204,7 @@ plot_ero <- xyplot(top ~ p.q50 | variable,
 plot_ero
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\04_TCI~1/figure-html/plot_ero-1.png" width="75%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\_Git\Reportes\03_TCI_CS_Curvas_fisicoquimicas_files/figure-html/plot_ero-1.png" width="75%" style="display: block; margin: auto;" />
 
 
 

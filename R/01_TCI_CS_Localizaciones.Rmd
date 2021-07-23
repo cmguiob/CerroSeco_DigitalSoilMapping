@@ -10,7 +10,7 @@ knit: (function(inputFile, encoding) {
                         output_file = file.path(
                                         here::here(), 
                                         out_dir, 
-                                        '02_TCI_CS_Localizaciones.html'))
+                                        '01_TCI_CS_Localizaciones.html'))
                                         })
 output:
   html_document:
