@@ -1,0 +1,398 @@
+---
+title: "TCI - Cerro Seco / Suelos"
+subtitle: "Modelado II: caret"
+author: "Carlos Guio"
+date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) { 
+      out_dir <- 'Reportes';
+      rmarkdown::render(input = inputFile,
+                        encoding = encoding, 
+                        output_file = file.path(
+                                        here::here(), 
+                                        out_dir, 
+                                        '06_TCI_CS_Modelos_Caret.html'))
+                                        })
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+    keep_md: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(rgdal) #leer polígono
+library(sf) #manipular objetos espaciales tipo sf
+library(raster) #manipular objetos raster
+library(showtext)
+library(ggcorrplot)
+library(caret)
+library(ggsn)
+
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.align = "center",
+	fig.retina = 1,
+	fig.showtext = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 300,
+	include = FALSE,
+	out.width = "80%"
+)
+showtext_auto()
+
+```
+
+
+```{r read_data}
+
+#Cargar raster de variables topograficas ---------------------------------------
+
+temp <- tempfile() #Crear objetos temporales
+tempd <- tempdir()
+
+url_topo <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/DEM_derivados/Indices_terreno_SAGA.zip?raw=true"
+
+download.file(url_topo,temp, mode="wb") ##Descargar: mode necesario para windows
+
+unzip(temp, exdir=tempd) #Descomprimir
+
+files_names <- list.files(tempd, pattern = "*.tif") #Leer nombres de archivos
+files_paths <- paste(file.path(tempd), files_names[], sep = "\\") #Crear rutas
+
+topoind <- stack(files_paths)
+
+#--------------------------------------------------------------------------------
+
+#Cargar raster de sentinel 
+
+url_s2 <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/S2A_MSIL2A_20200109T152631_subset_resampled10.zip?raw=true"
+
+download.file(url_s2, temp, mode="wb") ##Descargar: mode necesario para windows
+
+unzip(temp, exdir = tempd) #Descomprimir
+
+files_names2 <- list.files(tempd, pattern = "*resampled10.tif") #Leer nombres de archivos
+files_paths2 <- paste(file.path(tempd), files_names2[], sep = "\\") #Crear rutas
+
+s2 <- stack(files_paths2)
+#Rename sentinel stack bands
+
+#------------------------------------------------------------------------------
+
+
+# Cargar ubicaciones
+sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
+
+# Cargar poligonos mineria 2019 como sf
+url_mineria <- ("https://raw.githubusercontent.com/cmguiob/TERRAE_CerroSeco_DSM/main/Datos_GIS/Poligonos/mineria_2019_CS_EPGS32618.geojson")
+min2019sf_18N <- st_read(url_mineria)
+
+#Cargar poligono CS como sf
+url_limite <- "https://raw.githubusercontent.com/cmguiob/TERRAE_CerroSeco_DSM/main/Datos_GIS/Poligonos/limite_CS_EPGS32618.geojson"
+CSsf_18N <- st_read(url_limite)
+
+
+```
+
+```{r prep_covar, include = TRUE, echo = TRUE}
+
+# Renombrar
+names(topoind) <- c("ASE", "ASN", "DEM","DSC", "FLA", "FLD", "LSF", "MPI",
+                    "PLC", "PRC", "RSP", "SLP", "TPI", "TRI1", "TRI5", "TWI",
+                    "USC", "VDN", "WSB") 
+names(s2) <- c("B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12") 
+
+# Crear NDVI
+NDVI <- (s2[[7]] - s2[[3]]) / (s2[[7]] + s2[[3]])
+names(NDVI) <- "NDVI"
+
+#Poner rasters en mismo origen para alinear
+topoind <- resample(topoind, NDVI) # This also puts them in same extent
+
+#Clip raster a poligono externo
+topoind_clip <- mask(topoind, CSsf_18N)
+NDVI_clip <- mask(NDVI, CSsf_18N)
+
+covars <- stack(topoind_clip, NDVI_clip)
+
+#Clip interno de poligonos mineros
+covars_clip <- mask(covars, min2019sf_18N, inverse = TRUE)
+
+# Crear df de variables
+covars_df <- as.data.frame(covars_clip, xy= TRUE, na.rm = TRUE) 
+
+# Crear set de puntos para entrenamiento y test. Usar raster::extract por interferencia con tidyr
+sitio_modelo <- sitio[,c("ID","SECUENCIA","long","lat")]
+coordinates(sitio_modelo) <- ~  long + lat
+proj4string(sitio_modelo) <- "+proj=longlat +datum=WGS84 +no_defs"
+sitio_modelo_18N <- st_as_sf(sitio_modelo) %>% st_transform(crs = 32618)
+
+covars_puntos <- raster::extract(covars_clip, sitio_modelo_18N)
+
+full_set <- cbind(data.frame(secuencia = sitio_modelo_18N[["SECUENCIA"]],
+                             long = st_coordinates(sitio_modelo_18N)[, 1], 
+                             lat = st_coordinates(sitio_modelo_18N)[, 2]), 
+                     covars_puntos) %>%
+          drop_na() %>%
+          dplyr::mutate(secuencia = as.factor(secuencia))
+  
+
+
+```
+
+La predicción sin ajustar devulve un kapp de 0.2 - 0.3. Factores que afectan son el porcentaje de la partición, el tipo de remuestreo (cv vs loocv), el desbalance de clases, la falta de representatividad de las covariables raster en el set de entrenamiento, la selección de variables. A continuación se mencionan los efectos:
+
+```{r splitting}
+
+# Crear particiones
+set.seed(2)
+caret_split <- createDataPartition(full_set$secuencia, p = .75, list = FALSE)
+caret_train <- full_set[caret_split,]
+caret_test <- full_set[-caret_split,]
+
+```
+
+Ensayé partición 0.7, 0.75 y 0.8. Al aumentar el porcentaje de observaciones en el set de entrenamiento ...
+
+```{r preprocess}
+
+# centrar, escalar
+# one-hot-encoding (cuando use la varaible geo)?
+# eliminar correlación alta?
+# eliminar varianza cero?
+# preprocesar longitud y latitud?
+#selección de variables?
+# class imbalance?
+#impute NAs?
+
+caret_pp <- preProcess(caret_train %>% dplyr::select(-secuencia), method = c("center", "scale"))
+caret_train <- predict(caret_pp, caret_train)
+caret_test <- predict(caret_pp, caret_test)
+
+```
+
+Los efectos del preprocesamiento fueron ...
+
+```{r resample}
+
+set.seed(2)
+caret_cv <- trainControl(method = "repeatedcv", 
+                         number = 10, 
+                         repeats = 5, 
+                         classProbs = TRUE
+                         #search = "grid"
+                         )
+# Con k = 10 el modelo tiene menos overfit: se ve un mapa con menos ruido.
+
+set.seed(2)
+caret_loocv <- trainControl(
+  method = 'LOOCV',                
+  number = 1,                     
+  savePredictions = 'final',        
+  classProbs = TRUE
+  #search = "grid"
+  ) 
+# LOOCV recomendada para set de datos pequeños.
+
+
+
+```
+
+El modelo con remuestreo loocv tardó mas en correr, pero mostró una mejora en el Kappa de 0.1 a 0.2 puntos, el mejor en random forest. Al predecir sobre el raster ambos modelos mostraron una mejora en la granularidad, es decir, la distribución de las secuencias adoptaba patrones relacionados a las covariables geográficas. 
+
+```{r tuning}
+
+tuneGrid_rf <- expand.grid(
+  .mtry = 1:10
+  #.splitrule = "gini", #other option is extra trees
+  #.min.node.size = c(5, 10)
+)
+
+tuneGrid_knn <- expand.grid(kmax = 1:10,
+                            distance = 1,
+                            # different weighting types in kknn
+                            kernel = c('gaussian',
+                                        'triangular',
+                                        #'rectangular',
+                                        'epanechnikov',
+                                        'biweight',
+                                        #'triweight',
+                                        #'cos',
+                                        #'inv',
+                                        'rank',
+                                        'optimal'))
+
+
+```
+
+
+
+```{r train, include = TRUE, echo = TRUE}
+
+# train random forest model
+set.seed(2)
+caret_rf <- train(secuencia ~ NDVI + DEM + TWI,
+                  data = caret_train,
+                  method = "rf",
+                  #metric = "kappa",
+                  trControl = caret_loocv,
+                  ntree = 1000,   #num.trees -ranger, ntree - rf
+                  tuneGrid = tuneGrid_rf)
+
+caret_rf
+
+#train knn model
+set.seed(2)
+caret_knn <- train(secuencia ~ NDVI + DEM + TWI,
+                  data = caret_train,
+                  method = "kknn",
+                  metric = "kappa",
+                  trControl = caret_loocv,
+                  tuneGrid = tuneGrid_knn)
+
+caret_knn
+
+```
+
+Sensibilidad ...  
+
+```{r test, include = TRUE, echo = TRUE}
+
+caret_rf_result <- predict(caret_rf, newdata = caret_test)
+confusionMatrix(caret_rf_result, caret_test$secuencia)
+
+caret_knn_result <- predict(caret_knn, newdata = caret_test)
+confusionMatrix(caret_knn_result, caret_test$secuencia)
+
+```
+
+La matriz de confusión ...
+
+```{r predict}
+
+# crear data frames vacios, con variables usadas en modelo, para predecir
+predict_set_knn <- data.frame(modelo = as.factor("kknn"),
+                              secuencia = as.factor(NA), 
+                              long = covars_df[["x"]], 
+                              lat = covars_df[["y"]],
+                              DEM = covars_df[["DEM"]],
+                              TWI = covars_df[["TWI"]],
+                              NDVI = covars_df[["NDVI"]],
+                              SLP = covars_df[["SLP"]]
+                      )
+
+predict_set_rf <- predict_set_knn %>% mutate(modelo = "rf")
+
+
+#Predecir en raster
+knn_onraster <- predict(caret_knn, 
+                        newdata = predict_set_knn, #%>% dplyr::filter(DEM > 2800), 
+                        type = "prob")
+
+predicted_raster_knn <- predict_set_knn %>%
+ #dplyr::filter(DEM > 2800) %>%
+  dplyr::mutate(secuencia = factor(names(knn_onraster)[apply(knn_onraster, 1, which.max)],
+         levels = c("A1", "A2", "B1", "B2"))) %>%
+  dplyr::mutate(prob = do.call(pmax,knn_onraster[,secuencia])) %>%
+  dplyr::mutate(probf = as_factor(case_when(prob < 0.39 ~ 0.4,
+                        prob >= 0.39 & prob < 0.59 ~ 0.6,
+                        prob >= 0.59 & prob < 0.79 ~ 0.8,
+                        prob >= 0.79 & prob <= 1 ~ 1)))
+
+rf_onraster <- predict(caret_rf, 
+                       newdata = predict_set_rf, #%>% dplyr::filter(DEM > 2800), 
+                       type = "prob")
+
+predicted_raster_rf <- predict_set_rf %>% 
+ #dplyr::filter(DEM > 2800) %>%
+  dplyr::mutate(secuencia = factor(names(rf_onraster)[apply(rf_onraster, 1, which.max)],
+         levels = c("A1", "A2", "B1", "B2"))) %>%
+  dplyr::mutate(prob = do.call(pmax,rf_onraster[,secuencia])) %>%
+  dplyr::mutate(probf = as_factor(case_when(prob < 0.39 ~ 0.4,
+                        prob >= 0.39 & prob < 0.59 ~ 0.6,
+                        prob >= 0.59 & prob < 0.79 ~ 0.8,
+                        prob >= 0.79 & prob <= 1 ~ 1)))
+
+
+
+# Unificar y transformar tibble a sf
+predicted_raster <- rbind(predicted_raster_knn,predicted_raster_rf) %>%
+                                    st_as_sf(coords = c("long", "lat"), 
+                                             crs = 32618, remove = F)
+
+```
+
+knn tiene distribución discreta de valores de probabilidades para las diferentes secuencias, mientras que la distribución de valores para rf es masomenos continua. En el primer caso, las probabilidades están limitadas por la relación entre las secuencias y el número de vecinos k. En el segundo caso ... 
+
+
+```{r plot_setup}
+
+#Plot parameters
+col_scp <- c('#6AB6AA', '#4B6E8E', '#F9C93C', '#DA7543')
+#Colors
+#cls <- as.character(c(sapply(col_scp,alpha,0.4),sapply(col_scp,alpha,0.6),sapply(col_scp,alpha,0.8),sapply(col_scp,alpha,1)))
+# Labels
+#lbls <- c(rep("", times=18),"A1","A2","B1","B2")
+# Breaks
+#brks <- levels(interaction(secuencias_sf$secuencia,secuencias_sf$probf))
+
+
+# Obtener fuentes
+font_add_google(name = "Roboto Condensed", family= "robotoc")
+font_add_google(name = "Roboto", family= "roboto")
+
+# Definir theme
+theme_set(theme_minimal(base_family = "roboto"))
+
+theme_update(panel.grid = element_blank(),
+             axis.text = element_text(family = "robotoc",
+                                        color = "#c3beb8"),
+             axis.title = element_blank(),
+             axis.ticks =  element_line(color = "#c3beb8", size = .7),
+             legend.title = element_text(size = 13, 
+                                         face = "bold", 
+                                         color = "grey20", 
+                                         family = "roboto"),
+             legend.text = element_text(size = 10, 
+                                        color = "#c3beb8", 
+                                        family = "robotoc",
+                                        face = "bold"))
+
+```
+
+
+```{r plot_map, include = TRUE, echo = TRUE}
+
+
+p_modelos <- ggplot() + 
+  geom_raster(data = predicted_raster, 
+              aes(x=long, y=lat, 
+                  fill = secuencia ,
+                  alpha = prob))+
+  ggsn::scalebar(data = CSsf_18N, 
+           dist = 0.5, 
+           dist_unit = "km",
+           transform = FALSE,
+           st.size = 3,
+           height=0.015,
+           border.size = 0.05,
+           box.color = "#e2ddd6",
+           box.fill = c("grey20","#e2ddd6"),
+           family = "robotoc" )+
+  geom_sf(data = CSsf_18N, fill = NA)+
+  scale_fill_manual(values = col_scp)+
+  scale_alpha_continuous(guide = "none")+
+  facet_wrap(vars(modelo))+
+  labs(x = "", y = "",
+       title = "Kappa 0.5 al quitar m y o y expandir area")+
+  scale_x_continuous(breaks=c(-74.18, -74.17, -74.16))+
+  scale_y_continuous(breaks=c(4.55,4.56,4.57))
+
+p_modelos
+
+```
+
+knnn predijo secuencias distribuídas sobre grandes áreas, mientras que rf predijo una distribución mas fina.
