@@ -112,17 +112,10 @@ names(NDVI) <- "NDVI"
 #Poner rasters en mismo origen para alinear
 topoind <- resample(topoind, NDVI) # This also puts them in same extent
 
-#Clip raster a poligono externo
-topoind_clip <- mask(topoind, CSsf_18N)
-NDVI_clip <- mask(NDVI, CSsf_18N)
-
-covars <- stack(topoind_clip, NDVI_clip)
+covars <- stack(topoind, NDVI)
 
 #Clip interno de poligonos mineros
 covars_clip <- mask(covars, min2019sf_18N, inverse = TRUE)
-
-# Crear df de variables
-covars_df <- as.data.frame(covars_clip, xy= TRUE, na.rm = TRUE) 
 
 # Crear set de puntos para entrenamiento y test. Usar raster::extract por interferencia con tidyr
 sitio_modelo <- sitio[,c("ID","SECUENCIA","long","lat")]
@@ -136,10 +129,15 @@ full_set <- cbind(data.frame(secuencia = sitio_modelo_18N[["SECUENCIA"]],
                              long = st_coordinates(sitio_modelo_18N)[, 1], 
                              lat = st_coordinates(sitio_modelo_18N)[, 2]), 
                      covars_puntos) %>%
-          drop_na() %>%
+          #drop_na() %>%
           dplyr::mutate(secuencia = as.factor(secuencia))
   
+#Clip raster a poligono externo: 
+# se hace al final, porque algunos puntos para entrenamiento caen fuera del poligono
+covars_clip <- mask(covars_clip, CSsf_18N)
 
+# Crear df de variables
+covars_df <- as.data.frame(covars_clip, xy= TRUE, na.rm = TRUE) 
 
 ```
 
@@ -148,7 +146,7 @@ La predicción sin ajustar devulve un kapp de 0.2 - 0.3. Factores que afectan so
 ```{r splitting}
 
 # Crear particiones
-set.seed(2)
+set.seed(1)
 caret_split <- createDataPartition(full_set$secuencia, p = .75, list = FALSE)
 caret_train <- full_set[caret_split,]
 caret_test <- full_set[-caret_split,]
@@ -168,7 +166,8 @@ Ensayé partición 0.7, 0.75 y 0.8. Al aumentar el porcentaje de observaciones e
 # class imbalance?
 #impute NAs?
 
-caret_pp <- preProcess(caret_train %>% dplyr::select(-secuencia), method = c("center", "scale"))
+#Center and scale are applied on each column independently. This means, removing lat and long doesnt affect the transformation of the other variables.
+caret_pp <- preProcess(caret_train %>% dplyr::select(-secuencia), method = c("center","scale","zv","nzv"))
 caret_train <- predict(caret_pp, caret_train)
 caret_test <- predict(caret_pp, caret_test)
 
@@ -178,22 +177,20 @@ Los efectos del preprocesamiento fueron ...
 
 ```{r resample}
 
-set.seed(2)
+set.seed(1)
 caret_cv <- trainControl(method = "repeatedcv", 
                          number = 10, 
-                         repeats = 5, 
+                         repeats = 10, 
                          classProbs = TRUE
-                         #search = "grid"
                          )
 # Con k = 10 el modelo tiene menos overfit: se ve un mapa con menos ruido.
 
-set.seed(2)
+set.seed(1)
 caret_loocv <- trainControl(
   method = 'LOOCV',                
   number = 1,                     
   savePredictions = 'final',        
   classProbs = TRUE
-  #search = "grid"
   ) 
 # LOOCV recomendada para set de datos pequeños.
 
@@ -203,25 +200,24 @@ caret_loocv <- trainControl(
 
 El modelo con remuestreo loocv tardó mas en correr, pero mostró una mejora en el Kappa de 0.1 a 0.2 puntos, el mejor en random forest. Al predecir sobre el raster ambos modelos mostraron una mejora en la granularidad, es decir, la distribución de las secuencias adoptaba patrones relacionados a las covariables geográficas. 
 
+
 ```{r tuning}
 
 tuneGrid_rf <- expand.grid(
-  .mtry = 1:10
-  #.splitrule = "gini", #other option is extra trees
-  #.min.node.size = c(5, 10)
+  mtry = c(1:10)
 )
 
-tuneGrid_knn <- expand.grid(kmax = 1:10,
-                            distance = 1,
+tuneGrid_knn <- expand.grid(kmax = 2:15,
+                            distance = 1:2,
                             # different weighting types in kknn
                             kernel = c('gaussian',
                                         'triangular',
-                                        #'rectangular',
+                                        'rectangular',
                                         'epanechnikov',
                                         'biweight',
-                                        #'triweight',
-                                        #'cos',
-                                        #'inv',
+                                        'triweight',
+                                        'cos',
+                                        'inv',
                                         'rank',
                                         'optimal'))
 
@@ -233,24 +229,27 @@ tuneGrid_knn <- expand.grid(kmax = 1:10,
 ```{r train, include = TRUE, echo = TRUE}
 
 # train random forest model
-set.seed(2)
+set.seed(1)
 caret_rf <- train(secuencia ~ NDVI + DEM + TWI,
                   data = caret_train,
                   method = "rf",
-                  #metric = "kappa",
-                  trControl = caret_loocv,
-                  ntree = 1000,   #num.trees -ranger, ntree - rf
+                  metric = "Kappa",
+                  #transformations are applied just on the variables in the formula
+                  #preProcess = c("center"), 
+                  trControl = caret_cv,
+                  ntree = 5000,   #num.trees -ranger, ntree - rf
                   tuneGrid = tuneGrid_rf)
 
 caret_rf
 
 #train knn model
-set.seed(2)
+set.seed(1)
 caret_knn <- train(secuencia ~ NDVI + DEM + TWI,
                   data = caret_train,
                   method = "kknn",
-                  metric = "kappa",
-                  trControl = caret_loocv,
+                  metric = "Kappa",
+                  #preProcess = c("center"), 
+                  trControl = caret_cv,
                   tuneGrid = tuneGrid_knn)
 
 caret_knn
@@ -274,26 +273,32 @@ La matriz de confusión ...
 ```{r predict}
 
 # crear data frames vacios, con variables usadas en modelo, para predecir
-predict_set_knn <- data.frame(modelo = as.factor("kknn"),
-                              secuencia = as.factor(NA), 
-                              long = covars_df[["x"]], 
-                              lat = covars_df[["y"]],
-                              DEM = covars_df[["DEM"]],
-                              TWI = covars_df[["TWI"]],
-                              NDVI = covars_df[["NDVI"]],
-                              SLP = covars_df[["SLP"]]
-                      )
+predict_set_knn <-covars_df %>%
+                      dplyr::mutate(modelo = factor("kknn")) %>%
+                      dplyr::mutate(secuencia = factor(NA)) %>%
+                      rename(long = x, lat = y)
 
-predict_set_rf <- predict_set_knn %>% mutate(modelo = "rf")
+
+
+# Solo aplica si se hizo procesamiento al inicio, fuera de train()
+# Se deben tener las mismas variables que train y test. Las variables de coordenadas se adicionan de nuevo, porque fueron preprocesadas antes y no tienen valores reales para mapeo.
+predict_set_knn <- predict(caret_pp, predict_set_knn %>% dplyr::select(-secuencia, -modelo)) %>%
+                        dplyr::mutate(lat = covars_df[["y"]]) %>%
+                        dplyr::mutate(long = covars_df[["x"]]) %>%
+                        dplyr::mutate(modelo = factor("kknn")) %>%
+                        dplyr::mutate(secuencia = factor(NA))
+  
+#Crear set para rf
+predict_set_rf <- predict_set_knn %>% mutate(modelo = factor("rf"))
+
 
 
 #Predecir en raster
 knn_onraster <- predict(caret_knn, 
-                        newdata = predict_set_knn, #%>% dplyr::filter(DEM > 2800), 
+                        newdata = predict_set_knn, 
                         type = "prob")
 
 predicted_raster_knn <- predict_set_knn %>%
- #dplyr::filter(DEM > 2800) %>%
   dplyr::mutate(secuencia = factor(names(knn_onraster)[apply(knn_onraster, 1, which.max)],
          levels = c("A1", "A2", "B1", "B2"))) %>%
   dplyr::mutate(prob = do.call(pmax,knn_onraster[,secuencia])) %>%
@@ -303,11 +308,10 @@ predicted_raster_knn <- predict_set_knn %>%
                         prob >= 0.79 & prob <= 1 ~ 1)))
 
 rf_onraster <- predict(caret_rf, 
-                       newdata = predict_set_rf, #%>% dplyr::filter(DEM > 2800), 
+                       newdata = predict_set_rf,  
                        type = "prob")
 
 predicted_raster_rf <- predict_set_rf %>% 
- #dplyr::filter(DEM > 2800) %>%
   dplyr::mutate(secuencia = factor(names(rf_onraster)[apply(rf_onraster, 1, which.max)],
          levels = c("A1", "A2", "B1", "B2"))) %>%
   dplyr::mutate(prob = do.call(pmax,rf_onraster[,secuencia])) %>%
@@ -322,6 +326,8 @@ predicted_raster_rf <- predict_set_rf %>%
 predicted_raster <- rbind(predicted_raster_knn,predicted_raster_rf) %>%
                                     st_as_sf(coords = c("long", "lat"), 
                                              crs = 32618, remove = F)
+
+
 
 ```
 
