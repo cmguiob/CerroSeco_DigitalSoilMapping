@@ -402,3 +402,5 @@ p_modelos
 ```
 
 knnn predijo secuencias distribuídas sobre grandes áreas, mientras que rf predijo una distribución mas fina.
+
+Iportancia...
