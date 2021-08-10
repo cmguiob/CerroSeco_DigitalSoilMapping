@@ -40,6 +40,34 @@ showtext_auto()
 ```
 
 
+```{r theme_setup}
+
+# Obtener fuentes
+
+font_add_google(name = "Roboto Condensed", family= "robotoc")
+font_add_google(name = "Roboto", family= "roboto")
+
+# Definir theme
+theme_set(theme_minimal(base_family = "roboto"))
+
+theme_update(panel.grid = element_blank(),
+             axis.text = element_text(family = "robotoc",
+                                      color = "#c3beb8",
+                                      size = 6),
+             axis.title = element_text( family = "roboto",
+                                        size = 8),
+             axis.ticks =  element_line(color = "#c3beb8", size = .7),
+             legend.title = element_text(size = 10, 
+                                         face = "bold", 
+                                         color = "grey20", 
+                                         family = "roboto"),
+             legend.text = element_text(size = 8, 
+                                        color = "#c3beb8", 
+                                        family = "robotoc"))
+
+```
+
+
 ```{r read_data}
 
 #Cargar raster de variables topograficas ---------------------------------------
@@ -107,25 +135,19 @@ NDVI <- (s2[[7]] - s2[[3]]) / (s2[[7]] + s2[[3]])
 names(NDVI) <- "NDVI"
 
 #Poner rasters en mismo origen para alinear
-topoind <- resample(topoind, NDVI) # This also puts them in same extent
+topoind2 <- resample(topoind, NDVI) # This also puts them in same extent
 
 #Chequeo
-t(sapply(c(topoind, NDVI), origin))
+t(sapply(c(topoind2, NDVI), origin))
 
-#Clip raster a poligono externo
-topoind_clip <- mask(topoind, CSsf_18N)
-NDVI_clip <- mask(NDVI, CSsf_18N)
+#Stack
+covars <- stack(topoind2, NDVI)
 
-#Check extent 
-t(sapply(c(topoind_clip, NDVI_clip), function(i) as.vector(extent(i))))
-
-covars <- stack(topoind_clip, NDVI_clip)
+#Check plot
+plot(covars[[c("DEM","TWI","SLP", "NDVI")]])
 
 #Clip interno de poligonos mineros
 covars_clip <- mask(covars, min2019sf_18N, inverse = TRUE)
-
-#Check plot
-plot(covars_clip[[c("DEM","TWI","SLP", "NDVI")]])
 
 # Crear set de puntos para entrenamiento y test. Usar raster::extract por interferencia con tidyr
 sitio_modelo <- sitio[,c("ID","SECUENCIA","long","lat")]
@@ -141,24 +163,34 @@ full_set <- cbind(data.frame(secuencia = sitio_modelo_18N[["SECUENCIA"]],
                      covars_puntos) %>%
           #drop_na() %>%
           dplyr::mutate(secuencia = as.factor(secuencia))
-  
+
+
+
+
 #Clip raster a poligono externo: 
 # se hace al final, porque algunos puntos para entrenamiento caen fuera del poligono
 covars_clip <- mask(covars_clip, CSsf_18N)
 
-# Crear df de variables
-covars_df <- as.data.frame(covars_clip, xy= TRUE, na.rm = TRUE) %>% 
-  rename(long = x, lat = y)
-  
+# Crear df de variables. NAs removed corespond to pixels outside the polygon
+covars_df <- as.data.frame(covars_clip, xy= TRUE, na.rm = TRUE) %>%
+             rename(long = x, lat = y)
+
+
+#Check plot
+plot(covars_clip[[c("DEM","TWI","SLP", "NDVI")]])
+
 
 
 ```
 
 
 
-```{r prep_eda}
+```{r prep_sets}
 
 #Crear sets de entrenamiento y test, igual que en el proceso de modelado
+
+#Se tiene en cuenta la variable objetivo para estratificar la partición?
+
 set.seed(1)
 caret_split <- createDataPartition(full_set$secuencia, p = .75, list = FALSE)
 
@@ -168,21 +200,35 @@ caret_train <- full_set[caret_split,] %>%
 caret_test <- full_set[-caret_split,]%>%
                         dplyr::mutate(set = factor("test"))
 
-#Etiquetar datos con test y train en lascovariables
+#Etiquetar datos con test y train en las covariables
 covars_sets <- covars_df %>% 
              mutate(secuencia = factor(NA)) %>%
              mutate(set = factor(NA)) %>%
              rbind(caret_train) %>%
-             rbind(caret_test)
+             rbind(caret_test) %>%
+             mutate(set = case_when(
+               is.na(set) ~ "predict",
+               set == "test" ~ "test",
+               set == "train" ~ "train"))
+
+#secuencia is empty to predict
+library(DataExplorer)
+plot_intro(covars_sets %>% dplyr::select(-secuencia)) 
+
+#except for the rows with train and test
+library(visdat)
+vis_dat(covars_sets %>% filter(set == "train" | set == "test"))
+
+```
 
 
-
+```{r prep_normalizacion}
 #Aplicar procesamiento
-caret_range <- caret::preProcess(covars_sets, "range")
+caret_range <- caret::preProcess(caret_train, "range")
 
 covars_norm <- predict(caret_range, covars_sets)
-               
-
+train_norm <- predict(caret_range, caret_train)
+test_norm <- predict(caret_range, caret_test)
 
 #Crear set de datos largo
 covars_norm_l <- covars_norm %>% 
@@ -190,45 +236,10 @@ covars_norm_l <- covars_norm %>%
                              names_to = "covariables",
                              values_to = "valores") %>%
                 dplyr::mutate(covariables = as.factor(covariables))
-
-
-
-```
-
-```{r theme_setup}
-
-# Obtener fuentes
-
-font_add_google(name = "Roboto Condensed", family= "robotoc")
-font_add_google(name = "Roboto", family= "roboto")
-
-# Definir theme
-theme_set(theme_minimal(base_family = "roboto"))
-
-theme_update(panel.grid = element_blank(),
-             axis.text = element_text(family = "robotoc",
-                                      color = "#c3beb8",
-                                      size = 6),
-             axis.title = element_text( family = "roboto",
-                                        size = 8),
-             axis.ticks =  element_line(color = "#c3beb8", size = .7),
-             legend.title = element_text(size = 10, 
-                                         face = "bold", 
-                                         color = "grey20", 
-                                         family = "roboto"),
-             legend.text = element_text(size = 8, 
-                                        color = "#c3beb8", 
-                                        family = "robotoc"))
-
 ```
 
 
-Preguntas...
-
-
-Resume
-
-```{r explore}
+```{r EDA_particion}
 
 covars_norm_l %>%
   filter(covariables == "long" & (set == "train" | set == "test")) %>%
@@ -240,7 +251,41 @@ covars_norm_l %>%
 #add glue to display total number of observations in each set as facet label
 
 ```
-¿Que covariables están altamente correlacionadas?:_ corrplot
+
+### ¿Como se comparan la media de las variables predictoras para cada secuencia?
+
+```{r EDA_medias}
+
+ggplot(data = covars_norm_l %>% filter(set == "train")) +
+  geom_boxplot(mapping = aes(secuencia, valores, color = secuencia)) +
+  facet_wrap(~ covariables) +
+  theme(panel.border = element_rect(fill = NA, colour = "#c3beb8"))
+
+
+```
+
+Al comparar la media de las variables predictoras para las cuatro clases observa que algunas tienen muy poca información, como FLA, FLD, PRC y NDVI.
+
+### ¿Cómo se compara el patron de distribución de valores de los predictores para cada secuencia?
+
+```{r EDA_densidades}
+
+
+ggplot(data = covars_norm_l %>% filter(set == "train"), 
+       aes(x = valores, y = ..scaled.., color = secuencia)) +
+  geom_density() +
+  facet_wrap(~ covariables)+
+  scale_y_continuous(limits = c(0, 1)) +
+  theme(panel.border = element_rect(fill = NA, colour = "#c3beb8"))
+
+  
+```
+
+Al comparar las curvas de densidad se observa que las curvas de cada secuencia tienen NDVI diferenciados. FLA, FLD y PRC muestran poca información también en este análsis, por lo que serán removidas. Al comparar variables similares se observa que ASN tine más información que ASE, y TRI1 tiene mas información que TRI5, por lo que las de menor información serán removidas. 
+
+
+
+###¿Que covariables están altamente correlacionadas?:_ corrplot
 
 ```{r plot_corr}
 
