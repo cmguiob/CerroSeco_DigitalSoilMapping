@@ -217,7 +217,7 @@ caret_train <- full_set[caret_split,] %>%
 caret_test <- full_set[-caret_split,]%>%
                         dplyr::mutate(set = factor("test"))
 
-#Etiquetar datos con test y train en las covariables
+#Agregat datos de test y train en las covariables
 covars_sets <- covars_df %>% 
              mutate(secuencia = factor(NA)) %>%
              mutate(set = factor(NA)) %>%
@@ -249,7 +249,7 @@ test_norm <- predict(caret_range, caret_test)
 
 #Crear set de datos largo
 covars_norm_l <- covars_norm %>% 
-                tidyr::pivot_longer(cols = 1:22, 
+                tidyr::pivot_longer(cols = 1:26, 
                              names_to = "covariables",
                              values_to = "valores") %>%
                 dplyr::mutate(covariables = as.factor(covariables))
@@ -299,6 +299,7 @@ Después de observar las variables corelacionadas, hay que seleccionar las que t
 *  MPI - LSF - TRI5 - TRI1 - SLP
 * VDN - RSP
 * WSB - long
+*TWI - USC
 
 
 ### ¿Cómo se comparan la media de las variables predictoras para cada secuencia?
@@ -340,7 +341,8 @@ ggplot(data = covars_norm_l %>% filter(set == "train"),
 Al comparar las curvas de densidad se observa que las curvas de cada secuencia tienen NDVI diferenciados. FLA, FLD, LSF y PRC muestran poca información también en este análsis, por lo que serán removidas. Al comparar variables similares se observa que ASN tine más información que ASE. Respecto a las varaibles correlacionadas:
 
 *  TRI5 < TRI1 < SLP
-* RSP < VDN
+*  RSP < VDN
+* USC < TPI
 
 En conclusión, remover TRI1, TRI5, RSP, FLA, FLD, LSF, MPI, PRC, ASE, WSB.
 
@@ -352,7 +354,7 @@ En conclusión, remover TRI1, TRI5, RSP, FLA, FLD, LSF, MPI, PRC, ASE, WSB.
 
 # Distribución de identificación de puntos de entrenamiento y test
 covars_norm_l %>% 
-  filter(covariables %in% c("ASN","DSC","DEM", "NDVI","PLC","TPI", "USC", "TWI", "SLP", "VDN")) %>%
+  filter(covariables %in% c("ASN","DSC","DEM", "NDVI","PLC","TPI", "TWI", "SLP", "VDN")) %>%
   filter(seq_len(nrow(.)) %in% sample(1:nrow(.), 800) |(set == "train" | set == "test"))%>%
 ggplot() +
   ggdist::geom_dots(aes(x = valores, y = covariables, fill = set, color = set), point_size = 0.3) +
