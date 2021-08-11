@@ -70,7 +70,7 @@ theme_update(panel.grid = element_blank(),
 
 ```{r read_data}
 
-#Cargar raster de variables topograficas ---------------------------------------
+# Cargar raster de variables topograficas ---------------------------------------
 
 temp <- tempfile() #Crear objetos temporales
 tempd <- tempdir()
@@ -86,9 +86,13 @@ files_paths <- paste(file.path(tempd), files_names[], sep = "\\") #Crear rutas
 
 topoind <- stack(files_paths)
 
-#--------------------------------------------------------------------------------
+#Renombrar rasters
+names(topoind) <- c("ASE", "ASN", "DEM","DSC", "FLA", "FLD", "LSF", "MPI",
+                    "PLC", "PRC", "RSP", "SLP", "TPI", "TRI1", "TRI5", "TWI", "USC", 
+                    "VDN", "WSB") 
 
-#Cargar raster de sentinel 
+# Cargar raster de sentinel ----------------------------------------------------------
+
 
 url_s2 <- "https://github.com/cmguiob/TERRAE_CerroSeco_DSM/blob/main/Datos_GIS/S2A_MSIL2A_20200109T152631_subset_resampled10.zip?raw=true"
 
@@ -100,12 +104,13 @@ files_names2 <- list.files(tempd, pattern = "*resampled10.tif") #Leer nombres de
 files_paths2 <- paste(file.path(tempd), files_names2[], sep = "\\") #Crear rutas
 
 s2 <- stack(files_paths2)
-#Rename sentinel stack bands
 
-#------------------------------------------------------------------------------
+# Renombrar raster
+names(s2) <- c("B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12") 
+
+# Cargar puntos y polígonos ----------------------------------------------------------
 
 
-# Cargar ubicaciones
 sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
 
 # Cargar poligonos mineria 2019 como sf
@@ -122,15 +127,19 @@ CSsf_18N <- st_read(url_limite)
 
 ```{r prep_covar, include = TRUE, echo = TRUE}
 
-# Renombrar
-names(topoind) <- c("ASE", "ASN", "DEM","DSC", "FLA", "FLD", "LSF", "MPI",
-                    "PLC", "PRC", "RSP", "SLP", "TPI", "TRI1", "TRI5", "TWI", "USC", 
-                    "VDN", "WSB") #Rename stack layers
 
-names(s2) <- c("B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12") 
+# Crear set de puntos para entrenamiento y test.
+sitio_modelo_18N <- sitio[,c("ID","SECUENCIA","long","lat")] %>%
+  #transformar a sp
+  `coordinates<-`(~  long + lat) %>%  
+  #definir crs de sp
+  `proj4string<-`("+proj=longlat +datum=WGS84 +no_defs") %>%
+  # transformar a sf
+  st_as_sf() %>% 
+  st_transform(crs = 32618)
 
 
-# Crear NDVI
+# Crear NDVI a partir de Sentinel 2
 NDVI <- (s2[[7]] - s2[[3]]) / (s2[[7]] + s2[[3]])
 names(NDVI) <- "NDVI"
 
@@ -140,23 +149,31 @@ topoind2 <- resample(topoind, NDVI) # This also puts them in same extent
 #Chequeo
 t(sapply(c(topoind2, NDVI), origin))
 
+# Calculate distance buffer
+empty_raster <- NDVI %>% `values<-`(NA)
+dist_names <- c("A1", "A2", "B1", "B2")
+
+secuencias_dist <- stack()
+for(i in seq_along(dist_names)){
+  raster_i <- raster::distanceFromPoints(object = empty_raster,
+                                         xy = sitio_modelo_18N %>%
+                                              filter(SECUENCIA == dist_names[i]) %>%
+                                              st_coordinates())
+  names(raster_i) <- paste("dist",dist_names[i], sep = "_")
+secuencias_dist <- stack(secuencias_dist, raster_i)
+}
+
+
 #Stack
-covars <- stack(topoind2, NDVI)
+covars <- stack(topoind2, NDVI, secuencias_dist)
 
 #Check plot
-plot(covars[[c("DEM","TWI","SLP", "NDVI")]])
+plot(covars[[c("DEM","SLP", "NDVI", "dist_B2")]])
 
-#Clip interno de poligonos mineros
-covars_clip <- mask(covars, min2019sf_18N, inverse = TRUE)
+#Extraer covariables de puntos de muestreo
+covars_puntos <- raster::extract(covars, sitio_modelo_18N)
 
-# Crear set de puntos para entrenamiento y test. Usar raster::extract por interferencia con tidyr
-sitio_modelo <- sitio[,c("ID","SECUENCIA","long","lat")]
-coordinates(sitio_modelo) <- ~  long + lat
-proj4string(sitio_modelo) <- "+proj=longlat +datum=WGS84 +no_defs"
-sitio_modelo_18N <- st_as_sf(sitio_modelo) %>% st_transform(crs = 32618)
-
-covars_puntos <- raster::extract(covars_clip, sitio_modelo_18N)
-
+# Agregar coordenadas y secuencias a covariables de puntos de muestreo
 full_set <- cbind(data.frame(secuencia = sitio_modelo_18N[["SECUENCIA"]],
                              long = st_coordinates(sitio_modelo_18N)[, 1], 
                              lat = st_coordinates(sitio_modelo_18N)[, 2]), 
@@ -165,19 +182,19 @@ full_set <- cbind(data.frame(secuencia = sitio_modelo_18N[["SECUENCIA"]],
           dplyr::mutate(secuencia = as.factor(secuencia))
 
 
-
+#Clip interno de poligonos mineros
+covars_clip <- mask(covars, min2019sf_18N, inverse = TRUE)
 
 #Clip raster a poligono externo: 
 # se hace al final, porque algunos puntos para entrenamiento caen fuera del poligono
 covars_clip <- mask(covars_clip, CSsf_18N)
 
-# Crear df de variables. NAs removed corespond to pixels outside the polygon
+# Crear df de covariables. NAs removed corespond to pixels outside the polygon
 covars_df <- as.data.frame(covars_clip, xy= TRUE, na.rm = TRUE) %>%
              rename(long = x, lat = y)
 
-
 #Check plot
-plot(covars_clip[[c("DEM","TWI","SLP", "NDVI")]])
+plot(covars_clip[[c("DEM","SLP", "NDVI", "dist_B2")]])
 
 
 
@@ -239,7 +256,7 @@ covars_norm_l <- covars_norm %>%
 ```
 
 
-```{r EDA_particion}
+```{r EDA_particion, include = TRUE, echo = TRUE}
 
 covars_norm_l %>%
   filter(covariables == "long" & (set == "train" | set == "test")) %>%
@@ -252,9 +269,41 @@ covars_norm_l %>%
 
 ```
 
-### ¿Como se comparan la media de las variables predictoras para cada secuencia?
+### ¿Que covariables tienen varianza cero o muy baja?
 
-```{r EDA_medias}
+### ¿Que covariables están altamente correlacionadas?
+
+
+```{r EDA_corr, include = TRUE, echo = TRUE}
+
+#Correlación
+cor_mx <- cor(covars_norm %>% 
+                dplyr::filter(set == "train") %>%
+                dplyr::select(-set, -secuencia))
+
+ggcorrplot(cor_mx, type = "upper", hc.order = TRUE) +
+  theme(axis.text = element_text(size= 10),
+        axis.text.x = element_text(angle = 90),
+        legend.key.size = unit(0.3, "in"),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+
+
+```
+
+Después de observar las variables corelacionadas, hay que seleccionar las que tienen mayor contenido de información. Comparar
+
+*  MPI - LSF - TRI5 - TRI1 - SLP
+* VDN - RSP
+* WSB - long
+
+
+### ¿Cómo se comparan la media de las variables predictoras para cada secuencia?
+
+```{r EDA_medias, include = TRUE, echo = TRUE}
 
 ggplot(data = covars_norm_l %>% filter(set == "train")) +
   geom_boxplot(mapping = aes(secuencia, valores, color = secuencia)) +
@@ -266,9 +315,15 @@ ggplot(data = covars_norm_l %>% filter(set == "train")) +
 
 Al comparar la media de las variables predictoras para las cuatro clases observa que algunas tienen muy poca información, como FLA, FLD, PRC y NDVI.
 
-### ¿Cómo se compara el patron de distribución de valores de los predictores para cada secuencia?
+Respecto a las variables corelacionadas:
+* LSF < MPI < SLP = TRI1 = TRI5
+* VDN = RSP
 
-```{r EDA_densidades}
+El siguiente aspect oa comparar para seleccionar variables co nmayor información es la distribución de valores.
+
+### ¿Cómo se compara el patron de densidad de los predictores para cada secuencia?
+
+```{r EDA_densidades, include = TRUE, echo = TRUE}
 
 
 ggplot(data = covars_norm_l %>% filter(set == "train"), 
@@ -281,53 +336,23 @@ ggplot(data = covars_norm_l %>% filter(set == "train"),
   
 ```
 
-Al comparar las curvas de densidad se observa que las curvas de cada secuencia tienen NDVI diferenciados. FLA, FLD y PRC muestran poca información también en este análsis, por lo que serán removidas. Al comparar variables similares se observa que ASN tine más información que ASE, y TRI1 tiene mas información que TRI5, por lo que las de menor información serán removidas. 
+
+Al comparar las curvas de densidad se observa que las curvas de cada secuencia tienen NDVI diferenciados. FLA, FLD, LSF y PRC muestran poca información también en este análsis, por lo que serán removidas. Al comparar variables similares se observa que ASN tine más información que ASE. Respecto a las varaibles correlacionadas:
+
+*  TRI5 < TRI1 < SLP
+* RSP < VDN
+
+En conclusión, remover TRI1, TRI5, RSP, FLA, FLD, LSF, MPI, PRC, ASE, WSB.
 
 
+### ¿Que tan representativos son los puntos de entrenamiento y test en relación a las variables predictoras en todo el raster?
 
-###¿Que covariables están altamente correlacionadas?:_ corrplot
-
-```{r plot_corr}
-
-#Correlación
-cor_mx <- cor(covars_df)
-p_corr <- ggcorrplot(cor_mx, type = "upper", hc.order = TRUE) +
-  theme(axis.text = element_text(size= 10),
-        axis.text.x = element_text(angle = 90),
-        legend.key.size = unit(0.3, "in"),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 12),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-
-p_corr
-
-```
-
-¿Estan las clases balanceadas?: barplot
-
-```{r}
-
-```
-
-
-¿Cuantas clases podrian reconocerse sin supervisión?: kmeans, pca?
-
-¿Como son las curvas de densidad de las cuatro secuencias para cada predictor?: caret feature plot
-
-¿Que covariavles tienen varianza cero o muy baja?
-
-```{r}
-#soon
-```
-
-¿Que tan representativos son los puntos de entrenamiento y test en relación a las covariables del raster?: dot plot de la distribución de cada covariable, identificando los puntos de las secuencias
 
 ```{r plot_distr, fig.width = 5, fig.height= 10,  include = TRUE, echo = TRUE}
 
 # Distribución de identificación de puntos de entrenamiento y test
 covars_norm_l %>% 
-  filter(covariables %in% c("DEM", "NDVI", "TWI", "SLP")) %>%
+  filter(covariables %in% c("ASN","DSC","DEM", "NDVI","PLC","TPI", "USC", "TWI", "SLP", "VDN")) %>%
   filter(seq_len(nrow(.)) %in% sample(1:nrow(.), 800) |(set == "train" | set == "test"))%>%
 ggplot() +
   ggdist::geom_dots(aes(x = valores, y = covariables, fill = set, color = set), point_size = 0.3) +
@@ -338,3 +363,8 @@ ggplot() +
 
 ```
 
+### Que falta?
+
+¿Estan las clases balanceadas?: barplot
+
+¿Cuantas clases podrian reconocerse sin supervisión?: kmeans, pca?
