@@ -279,14 +279,14 @@ formula_train <- as.formula(paste("secuencia ~", model_vars))
 set.seed(1)
 caret_rf <- train(formula_train,
                   data = caret_train,
-                  method = "ranger",
-                  #metric = "Kappa",
+                  method = "rf",
+                  metric = "Kappa",
                   #importance can be selected in ranger. In rf is default impurity
-                  importance = "permutation", 
+                  #importance = "permutation", 
                   trControl = caret_cv,
                   #no need to tune trees(Hengl et al. 2018).rf:ntree, ranger:num.trees
-                  #num.trees = 5000,   
-                  tuneGrid = tuneGrid_ranger)
+                  ntree = 5000,   
+                  tuneGrid = tuneGrid_rf)
 
 caret_rf
 
@@ -297,7 +297,7 @@ caret_knn <- train(formula_train,
                   method = "kknn",
                   metric = "Kappa",
                   trControl = caret_cv,
-                  tuneGrid = tuneGrid_knn)
+                  tuneGrid = tuneGrid_kknn)
 
 caret_knn
 
