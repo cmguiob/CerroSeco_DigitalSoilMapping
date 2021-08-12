@@ -240,10 +240,14 @@ El modelo con remuestreo loocv tardó mas en correr, pero mostró una mejora en 
 ```{r tuning}
 
 tuneGrid_rf <- expand.grid(
-  mtry = c(1:10)
-)
+  mtry = c(1:10))
 
-tuneGrid_knn <- expand.grid(kmax = 2:15,
+tuneGrid_ranger <- expand.grid(
+  mtry = c(1:10),
+  splitrule = "gini",
+  min.node.size = c(1:5))
+
+tuneGrid_kknn <- expand.grid(kmax = 2:15,
                             distance = 1:2,
                             # different weighting types in kknn
                             kernel = c('gaussian',
@@ -275,12 +279,14 @@ formula_train <- as.formula(paste("secuencia ~", model_vars))
 set.seed(1)
 caret_rf <- train(formula_train,
                   data = caret_train,
-                  method = "rf",
-                  metric = "Kappa",
-                  importance = TRUE,
+                  method = "ranger",
+                  #metric = "Kappa",
+                  #importance can be selected in ranger. In rf is default impurity
+                  importance = "permutation", 
                   trControl = caret_cv,
-                  ntree = 5000,   #no need to tune this (Hengl et al. 2018)
-                  tuneGrid = tuneGrid_rf)
+                  #no need to tune trees(Hengl et al. 2018).rf:ntree, ranger:num.trees
+                  #num.trees = 5000,   
+                  tuneGrid = tuneGrid_ranger)
 
 caret_rf
 
