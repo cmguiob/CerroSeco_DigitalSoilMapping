@@ -2,7 +2,7 @@
 title: "TCI - Cerro Seco / Suelos"
 subtitle: "Localizaciones"
 author: "Carlos Guio"
-date: "2021-07-23"
+date: "2021-08-15"
 knit: (function(inputFile, encoding) { 
       out_dir <- 'Reportes';
       rmarkdown::render(input = inputFile,
@@ -160,7 +160,7 @@ p_localizaciones <- ggplot() +
 p_localizaciones
 ```
 
-<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\_Git\Reportes\01_TCI_CS_Localizaciones_files/figure-html/map-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\01_TCI~1/figure-html/map-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 

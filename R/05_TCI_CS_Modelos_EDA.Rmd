@@ -338,13 +338,13 @@ ggplot(data = covars_norm_l %>% filter(set == "train"),
 ```
 
 
-Al comparar las curvas de densidad se observa que las curvas de cada secuencia tienen NDVI diferenciados. FLA, FLD, LSF y PRC muestran poca información también en este análsis, por lo que serán removidas. Al comparar variables similares se observa que ASN tine más información que ASE. Respecto a las varaibles correlacionadas:
+Al comparar las curvas de densidad se observa que las curvas de cada secuencia tienen NDVI diferenciados. FLA, FLD y PRC muestran poca información también en este análsis, por lo que serán removidas. Al comparar variables similares se observa que ASN tine más información que ASE. Respecto a las varaibles correlacionadas:
 
 *  TRI5 < TRI1 < SLP
 *  RSP < VDN
 * USC < TPI
 
-En conclusión, remover TRI1, TRI5, RSP, FLA, FLD, LSF, MPI, PRC, ASE, WSB.
+En conclusión, remover TRI1, TRI5, RSP, FLA, FLD, MPI, PRC, ASE, WSB.
 
 
 ### ¿Que tan representativos son los puntos de entrenamiento y test en relación a las variables predictoras en todo el raster?

@@ -29,6 +29,8 @@ library(showtext)
 library(ggcorrplot)
 library(caret)
 library(ggsn)
+library(colorspace)
+library(patchwork)
 
 knitr::opts_chunk$set(
 	echo = FALSE,
@@ -119,6 +121,19 @@ sitio_modelo_18N <- sitio[,c("ID","SECUENCIA","long","lat")] %>%
 NDVI <- (s2[[7]] - s2[[3]]) / (s2[[7]] + s2[[3]])
 names(NDVI) <- "NDVI"
 
+#Calculate category raster for watershed basin
+# later do one hot encoding
+WSB_mx <- getValues(topoind$WSB)
+WSB_mx[is.na(WSB_mx)] <- 0
+
+set.seed(123)
+km.WSB <- kmeans(WSB_mx, 9, nstart = 19, iter.max = 500)
+
+km.WSB$cluster[km.WSB$cluster == 1] <-  NA
+km.WSB$cluster <- as.factor(km.WSB$cluster)
+  
+topoind$WSB <- setValues(topoind$WSB, km.WSB$cluster)
+
 #Poner rasters en mismo origen para alinear
 topoind2 <- resample(topoind, NDVI) # This also puts them in same extent
 
@@ -140,9 +155,6 @@ secuencias_dist <- stack(secuencias_dist, raster_i)
 }
 
 
-#Calculate category raster for watershed basin
-# later do one hot encoding
-
 #Stack
 covars <- stack(topoind2, NDVI, secuencias_dist)
 
@@ -158,7 +170,8 @@ full_set <- cbind(data.frame(secuencia = sitio_modelo_18N[["SECUENCIA"]],
                              lat = st_coordinates(sitio_modelo_18N)[, 2]), 
                      covars_puntos) %>%
           #drop_na() %>%
-          dplyr::mutate(secuencia = as.factor(secuencia))
+          dplyr::mutate(secuencia = as.factor(secuencia)) %>%
+          dplyr::mutate(WSB = as.factor(WSB))
 
 
 #Clip interno de poligonos mineros
@@ -170,12 +183,15 @@ covars_clip <- mask(covars_clip, CSsf_18N)
 
 # Crear df de covariables. NAs removed corespond to pixels outside the polygon
 covars_df <- as.data.frame(covars_clip, xy= TRUE, na.rm = TRUE) %>%
-             rename(long = x, lat = y) 
+             rename(long = x, lat = y)  %>%
+             dplyr::mutate(WSB = as.factor(round(WSB,digits = 0)))
 
 #Check plot
-plot(covars_clip[[c("DEM","SLP", "NDVI", "dist_B2")]])
+plot(covars_clip[[c("DEM","WSB", "NDVI", "dist_B2")]])
 
 ```
+
+Se utilizaron cuatro tipos de variables para la predicción: raster numérico de índices derivados del DEM, raster categórico derivado del DEM, NDVI derivado de Sentinel-2 y raster de distancias a cada secuencia.
 
 La predicción sin ajustar devulve un kapp de 0.2 - 0.3. Factores que afectan son el porcentaje de la partición, el tipo de remuestreo (cv vs loocv), el desbalance de clases, la falta de representatividad de las covariables raster en el set de entrenamiento, la selección de variables. A continuación se mencionan los efectos:
 
@@ -195,17 +211,24 @@ Ensayé partición 0.7, 0.75 y 0.8. Al aumentar el porcentaje de observaciones e
 ```{r preprocess}
 
 # centrar, escalar y rango generan mismo efecto
-# one-hot-encoding (cuando use la varaible geo)?
-# eliminar correlación alta?
-#selección de variables?
 # class imbalance?
 
-#Center and scale are applied on each column independently. This means, removing lat and long doesnt affect the transformation of the other variables.
+#Center and scale are applied on each column independently. This means, removing lat and long doesn't affect the transformation of the other variables.
 
-caret_pp <- preProcess(caret_train %>% dplyr::select(-secuencia), method = c("scale","zv","nzv"))
+caret_pp <- preProcess(x = covars_df,
+                       #%>% dplyr::select(-secuencia) if pre process on train set
+                       method = c("range","zv","nzv"))
 
 caret_train <- predict(caret_pp, caret_train)
 caret_test <- predict(caret_pp, caret_test)
+
+#one hot encode solo en wsb de covars_df que tiene todas las cuencas
+caret_one_hot <- dummyVars(formula = ~ WSB, data = covars_df)
+
+caret_train <- cbind(predict(caret_one_hot, caret_train), caret_train) %>%
+               dplyr::select(-WSB) 
+caret_test <- cbind(predict(caret_one_hot, caret_test), caret_test) %>%
+               dplyr::select(-WSB) 
 
 ```
 
@@ -240,7 +263,7 @@ El modelo con remuestreo loocv tardó mas en correr, pero mostró una mejora en 
 ```{r tuning}
 
 tuneGrid_rf <- expand.grid(
-  mtry = c(1:10))
+  mtry = c(1:15))
 
 tuneGrid_ranger <- expand.grid(
   mtry = c(1:10),
@@ -269,7 +292,7 @@ tuneGrid_kknn <- expand.grid(kmax = 2:15,
 ```{r train, include = TRUE, echo = TRUE}
 
 model_vars <- caret_train %>%
-              dplyr:: select(-secuencia, -lat, -long) %>%
+              dplyr:: select(-secuencia, -lat, -long, -TRI1, -TRI5,-RSP,-FLA, -FLD, -PRC) %>%
               colnames() %>%
               paste(collapse = "+")
 
@@ -281,8 +304,9 @@ caret_rf <- train(formula_train,
                   data = caret_train,
                   method = "rf",
                   metric = "Kappa",
-                  #importance can be selected in ranger. In rf is default impurity
-                  #importance = "permutation", 
+                  # importance type can be selected in ranger, e.g. permutation
+                  # rf importance = TRUE returns importance for each predicted class
+                  importance = TRUE, 
                   trControl = caret_cv,
                   #no need to tune trees(Hengl et al. 2018).rf:ntree, ranger:num.trees
                   ntree = 5000,   
@@ -330,12 +354,14 @@ predict_set_knn <-covars_df %>%
 # Solo aplica si se hizo procesamiento al inicio, fuera de train()
 # Se deben tener las mismas variables que train y test. Las variables de coordenadas se adicionan de nuevo, porque fueron preprocesadas antes y no tienen valores reales para mapeo.
 predict_set_knn <- predict(caret_pp, predict_set_knn %>% 
-                                     dplyr::select(-secuencia, -modelo)) %>%
-                        dplyr::mutate(modelo = factor("kknn")) %>%
-                        dplyr::mutate(secuencia = factor(NA)) %>%
-                        # Add coordinates again since they were preprocessed
-                        dplyr::mutate(lat = covars_df[["lat"]]) %>%
-                        dplyr::mutate(long = covars_df[["long"]]) 
+                                     dplyr::select(-secuencia, -modelo))%>%
+                   cbind(predict(caret_one_hot, .), .) %>%
+                   dplyr::select(-WSB) %>%
+                   dplyr::mutate(modelo = factor("kknn")) %>%
+                   dplyr::mutate(secuencia = factor(NA)) %>%
+                   # Add coordinates again since they were preprocessed
+                   dplyr::mutate(lat = covars_df[["lat"]]) %>%
+                   dplyr::mutate(long = covars_df[["long"]]) 
   
 #Crear set para rf
 predict_set_rf <- predict_set_knn %>% mutate(modelo = factor("rf"))
@@ -406,8 +432,11 @@ theme_set(theme_minimal(base_family = "roboto"))
 theme_update(panel.grid = element_blank(),
              axis.text = element_text(family = "robotoc",
                                         color = "#c3beb8"),
-             axis.title = element_blank(),
              axis.ticks =  element_line(color = "#c3beb8", size = .7),
+             axis.title = element_text(size = 10, 
+                                        color = "#c3beb8", 
+                                        family = "roboto",
+                                        face = "bold"),
              legend.title = element_text(size = 13, 
                                          face = "bold", 
                                          color = "grey20", 
@@ -420,7 +449,7 @@ theme_update(panel.grid = element_blank(),
 ```
 
 
-```{r plot_map, include = TRUE, echo = TRUE}
+```{r plot_models, include = TRUE, echo = TRUE}
 
 
 p_modelos <- ggplot() + 
@@ -442,10 +471,13 @@ p_modelos <- ggplot() +
   scale_fill_manual(values = col_scp)+
   scale_alpha_continuous(guide = "none")+
   facet_wrap(vars(modelo))+
-  labs(x = "", y = "",
-       title = "Kappa 0.5 al quitar m y o y expandir area")+
+  labs(x = "", y = "")+
   scale_x_continuous(breaks=c(-74.18, -74.17, -74.16))+
-  scale_y_continuous(breaks=c(4.55,4.56,4.57))
+  scale_y_continuous(breaks=c(4.55,4.56,4.57)) +
+  theme(strip.text = element_text(family = "roboto", 
+                                  face = "bold",
+                                  size = 11,
+                                  color = "grey20"))
 
 p_modelos
 
@@ -456,9 +488,152 @@ knnn predijo secuencias distribuídas sobre grandes áreas, mientras que rf pred
 Iportancia...
 
 
-```{r}
+```{r plot_imp_rf, include = TRUE, echo = TRUE}
 
-plot(varImp(caret_rf), top = 9)
+imp_rf <- varImp(caret_rf)$importance %>%
+          mutate(variable = factor(row.names(.))) %>%
+          pivot_longer(cols = !variable, 
+                       names_to = "secuencia", 
+                       values_to = "importancia") 
 
+p_imp_rf <- imp_rf %>%
+  # Las distanciaS son las mas importantes, pero no útiles para interpretar procesos
+  filter(!variable %in% c("dist_A1", "dist_A2", "dist_B1", "dist_B2")) %>%
+  group_by(secuencia) %>%
+  arrange(desc(importancia)) %>%
+  slice(1:5) %>%
+ggplot()+
+  geom_bar(aes(x = importancia, y = factor(importancia)), 
+           stat = "identity",
+           fill = darken("#c3beb8", 0.5, space = "HCL")) +
+    geom_text(aes(x = importancia, y = factor(importancia), label = variable), 
+            hjust=1.15,
+            colour = lighten("#c3beb8", 0.5, space = "HCL"),
+            family = "robotoc",
+            fontface = "bold",
+            size = 3.5) +
+  facet_wrap(~secuencia, scales = "free_y", ncol = 1) +
+  xlab("Importancia") +
+  theme(plot.margin = margin(0, 10, 0, 20),
+        plot.background = element_rect(fill = "white"),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        strip.text = element_text(family = "roboto", 
+                                  face = "bold",
+                                  size = 11,
+                                  color = "grey20"),
+        axis.text.x = element_text(vjust = -2),
+        axis.ticks.x = element_blank(),
+        legend.position = "none",
+        axis.title.x.bottom = element_text(margin = margin(10, 0, 0, 0))
+    )
+
+p_imp_rf
+
+```
+
+```{r plot_imp_knn}
+
+imp_knn <- varImp(caret_knn)$importance %>%
+          mutate(variable = factor(row.names(.))) %>%
+          pivot_longer(cols = !variable, 
+                       names_to = "secuencia", 
+                       values_to = "importancia") 
+
+p_imp_knn <- imp_knn %>%
+  # Las distanciaS son las mas importantes, pero no útiles para interpretar procesos
+  filter(!variable %in% c("dist_A1", "dist_A2", "dist_B1", "dist_B2")) %>%
+  group_by(secuencia) %>%
+  arrange(desc(importancia)) %>%
+  slice(1:5) %>%
+ggplot()+
+  geom_bar(aes(x = importancia, y = factor(importancia)), 
+           stat = "identity",
+           fill = darken("#c3beb8", 0.5, space = "HCL")) +
+    geom_text(aes(x = importancia, y = factor(importancia), label = variable), 
+            hjust=1.15,
+            colour = lighten("#c3beb8", 0.5, space = "HCL"),
+            family = "robotoc",
+            fontface = "bold",
+            size = 3.5) +
+  facet_wrap(~secuencia, scales = "free_y", ncol = 1, drop = TRUE) +
+  theme(axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        strip.text = element_text(family = "roboto", 
+                                  face = "bold",
+                                  size = 11,
+                                  color = "grey20"),
+        axis.text.x = element_text(vjust = -2),
+        axis.ticks.x = element_blank()
+    )
+
+p_imp_knn
+
+```
+
+
+Las variables importantes tienen la siguiente distribución en el área
+
+```{r plot_imp_ras, include = TRUE, echo = TRUE}
+
+imp_vars <- imp_rf %>%
+  # Las distanciaS son las mas importantes, pero no útiles para interpretar procesos
+  filter(!variable %in% c("dist_A1", "dist_A2", "dist_B1", "dist_B2")) %>%
+  group_by(secuencia) %>%
+  arrange(desc(importancia)) %>%
+  slice(1:5) %>%
+  ungroup()%>%
+  dplyr::select(variable) %>%
+  distinct() %>%
+  unlist() %>%
+  as.character() 
+
+p_imp_ras <- predict_set_rf %>%
+  dplyr::select(-modelo, -secuencia) %>%
+  pivot_longer(cols = -c(long,lat), 
+               names_to = "variable", 
+               values_to = "valor") %>%
+  filter(variable %in% imp_vars) %>%
+  ggplot() +
+  geom_raster(aes(x = long, y = lat, 
+                  fill = valor)) +
+  facet_wrap(~variable, nrow = 4) +
+  viridis::scale_fill_viridis() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        strip.text = element_text(family = "roboto", 
+                                  face = "bold",
+                                  size = 10,
+                                  colour = "grey20"),
+        plot.background = element_rect(color =  "grey96",
+                                            fill =  "grey96", 
+                                            size = 2),
+        legend.position = "right",
+        legend.title = element_blank())+
+        guides(colour = "none",
+         fill = guide_colourbar(barheight = unit(12,"lines"),
+                                barwidth = unit(0.4,"lines")))+
+  coord_fixed()
+  
+  
+  
+
+```
+
+
+```{r plot_imp, include = TRUE, echo = TRUE}
+
+p_imp <- p_imp_rf + p_imp_ras + plot_layout(widths = c(1, 2))
+
+p_imp
+
+```
+```{r save}
+ggsave(file = "mapas_modelos.png", plot = p_modelos, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 5.8, height = 3.8)
+
+ggsave(file = "importancia_rf_variables.png", plot = p_imp, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 6, height = 7.5)
 ```
 
