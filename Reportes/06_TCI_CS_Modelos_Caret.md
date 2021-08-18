@@ -655,8 +655,8 @@ p_modelos <- ggplot() +
   scale_alpha_continuous(guide = "none")+
   facet_wrap(vars(modelo))+
   labs(x = "", y = "")+
-  scale_x_continuous(breaks=c(-74.18, -74.17, -74.16))+
-  scale_y_continuous(breaks=c(4.55,4.56,4.57)) +
+  scale_x_continuous(breaks=c(-74.18, -74.17))+
+  scale_y_continuous(breaks=c(4.55,4.56)) +
   theme(strip.text = element_text(family = "roboto", 
                                   face = "bold",
                                   size = 11,
@@ -699,7 +699,7 @@ ggplot()+
   facet_wrap(~secuencia, scales = "free_y", ncol = 1) +
   xlab("Importancia") +
   theme(plot.margin = margin(0, 10, 0, 20),
-        plot.background = element_rect(fill = "white"),
+        plot.background = element_rect(fill = "white", color = "white"),
         axis.title.y = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),

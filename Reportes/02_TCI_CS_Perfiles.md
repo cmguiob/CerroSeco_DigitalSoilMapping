@@ -62,7 +62,7 @@ Los cuatro perfiles estudiados en detalle se presentan como modelos con propieda
 
 ```r
 p_perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forcats::fct_rev(ID_HZ2))) + 
-  geom_bar(position="stack", stat="identity", width = 0.35) +
+  geom_bar(position = "stack", stat = "identity", width = 0.35) +
   scale_fill_manual(values = rev(hz_bdf$RGBmx),
                     guide = FALSE) +
   geom_text_repel( data = hz_bdf,   
@@ -110,7 +110,7 @@ p_perfiles <- ggplot(hz_bdf, aes(x = reorder(ID, desc(ID)), y = ESP, fill = forc
                   labels=c("0", "100", "200", "300", "400", "500\ncm"))+
   scale_x_discrete(position = "top") +
   theme(axis.text.x = element_text(family = "robotoc",
-                           colour = c('#DA7543','#DA7543','#4B6E8E', '#6AB6AA'),
+                           colour = c('#DA7543','#DA7543', '#6AB6AA', '#4B6E8E'),
                            face = "bold"),
                axis.ticks.x =  element_blank(),
         panel.grid.major.y = element_line(color = "#c3beb8", size = .4, linetype = c("13"))) +
@@ -124,7 +124,7 @@ p_layout <- p_perfiles + inset_element(p_moon, 0.62, -0.17, 1.12, 0.53) # l, b, 
 p_layout
 ```
 
-<img src="C:\Users\cguio\Documents\Terrae\TCI_Cerro Seco\_Git\Reportes\02_TCI_CS_Perfiles_files/figure-html/layout_perfiles-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\02_TCI~1/figure-html/layout_perfiles-1.png" width="70%" style="display: block; margin: auto;" />
 
 
 
