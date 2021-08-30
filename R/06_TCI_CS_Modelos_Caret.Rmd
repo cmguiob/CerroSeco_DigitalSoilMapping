@@ -357,14 +357,14 @@ predict_set_knn <- predict(caret_pp, predict_set_knn %>%
                                      dplyr::select(-secuencia, -modelo))%>%
                    cbind(predict(caret_one_hot, .), .) %>%
                    dplyr::select(-WSB) %>%
-                   dplyr::mutate(modelo = factor("k-Nearest Neighbors")) %>%
+                   dplyr::mutate(modelo = factor("KKNN")) %>%
                    dplyr::mutate(secuencia = factor(NA)) %>%
                    # Add coordinates again since they were preprocessed
                    dplyr::mutate(lat = covars_df[["lat"]]) %>%
                    dplyr::mutate(long = covars_df[["long"]]) 
   
 #Crear set para rf
-predict_set_rf <- predict_set_knn %>% mutate(modelo = factor("Random Forest"))
+predict_set_rf <- predict_set_knn %>% mutate(modelo = factor("RF"))
 
 
 
@@ -449,7 +449,7 @@ theme_update(panel.grid = element_blank(),
 ```
 
 
-```{r plot_models, include = TRUE, echo = TRUE}
+```{r plot_models, include = TRUE, echo = FALSE}
 
 
 p_modelos <- ggplot() + 
@@ -472,16 +472,74 @@ p_modelos <- ggplot() +
   scale_alpha_continuous(guide = "none")+
   facet_wrap(vars(modelo))+
   labs(x = "", y = "")+
-  scale_x_continuous(breaks=c(-74.18, -74.17))+
-  scale_y_continuous(breaks=c(4.55,4.56)) +
   theme(strip.text = element_text(family = "roboto", 
                                   face = "bold",
                                   size = 11,
-                                  color = "grey20"))
+                                  color = "grey20"),
+        legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
 p_modelos
 
+
 ```
+
+
+```{r plot_ley, echo = TRUE, include= TRUE}
+
+df <- data.frame(
+  x = rep(c(0.2, 0.4, 0.6, 0.8), 4),
+  y = rep(c(0.2, 0.4, 0.6, 0.8), each = 4),
+  z = factor(rep(1:16))
+)
+
+p_leyenda <- ggplot(df, aes(x, y)) +
+  geom_tile(aes(fill = z))+
+  scale_fill_manual(values = c(adjust_transparency('#DA7543', 
+                                                   alpha = c(.2, .4, .6, .8)), 
+                               adjust_transparency('#F9C93C', 
+                                                   alpha = c(.2, .4, .6, .8)), 
+                               adjust_transparency('#4B6E8E', 
+                                                   alpha = c(.2, .4, .6, .8)), 
+                               adjust_transparency('#6AB6AA', 
+                                                   alpha = c(.2, .4, .6, .8)))) +
+  coord_fixed(ratio = 1) +
+  scale_x_continuous(labels = c(0.2, 0.4, 0.6, 0.8), 
+                     breaks = c(0.2,0.4,0.6,0.8))+
+  scale_y_continuous(position = "right", 
+                     labels = c("B2", "B1", "A2", "A1"), 
+                     breaks = c(0.2,0.4,0.6,0.8))+
+  labs(x = "Probabilidad")+
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.x = element_text(vjust = 4),
+        axis.title.x = element_text(size = 11, 
+                                    color = "grey20", 
+                                    family = "roboto",
+                                    face = "bold"),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 11, 
+                                   color = "#c3beb8", 
+                                   family = "roboto",
+                                   face = "bold"))
+
+
+
+
+p_leyenda
+
+  
+```
+
+```{r plot_mapas, echo= TRUE,  }
+p_mapas <- p_modelos + p_leyenda/plot_spacer() + plot_layout(widths = c(3.5, 1))
+
+p_mapas
+```
+
 
 knnn predijo secuencias distribuídas sobre grandes áreas, mientras que rf predijo una distribución mas fina.
 
@@ -632,7 +690,7 @@ p_imp
 
 ```
 ```{r save}
-ggsave(file = "mapas_modelos.png", plot = p_modelos, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 5.8, height = 3.8)
+ggsave(file = "mapas_modelos.png", plot = p_mapas, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 5.8, height = 3.8)
 
 ggsave(file = "importancia_rf_variables.png", plot = p_imp, device = "png", type ="cairo", path = here::here("graficas"), dpi = 300, width = 6, height = 7.5)
 ```

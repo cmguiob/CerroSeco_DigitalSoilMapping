@@ -2,7 +2,7 @@
 title: "TCI - Cerro Seco / Suelos"
 subtitle: "Modelado II: caret"
 author: "Carlos Guio"
-date: "2021-08-17"
+date: "2021-08-30"
 knit: (function(inputFile, encoding) { 
       out_dir <- 'Reportes';
       rmarkdown::render(input = inputFile,
@@ -633,39 +633,59 @@ knn tiene distribución discreta de valores de probabilidades para las diferente
 
 
 
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\06_TCI~1/figure-html/plot_models-1.png" width="80%" style="display: block; margin: auto;" />
+
+
 
 ```r
-p_modelos <- ggplot() + 
-  geom_raster(data = predicted_raster, 
-              aes(x = long, y = lat, 
-                  fill = secuencia ,
-                  alpha = prob))+
-  geom_sf(data = CSsf_18N, fill = NA) +
-  ggsn::scalebar(data = CSsf_18N, 
-           dist = 0.5, 
-           dist_unit = "km",
-           transform = FALSE,
-           st.size = 3,
-           height=0.015,
-           border.size = 0.05,
-           box.color = "#e2ddd6",
-           box.fill = c("grey20","#e2ddd6"),
-           family = "robotoc" )+
-  scale_fill_manual(values = col_scp)+
-  scale_alpha_continuous(guide = "none")+
-  facet_wrap(vars(modelo))+
-  labs(x = "", y = "")+
-  scale_x_continuous(breaks=c(-74.18, -74.17))+
-  scale_y_continuous(breaks=c(4.55,4.56)) +
-  theme(strip.text = element_text(family = "roboto", 
-                                  face = "bold",
-                                  size = 11,
-                                  color = "grey20"))
+df <- data.frame(
+  x = rep(c(0.2, 0.4, 0.6, 0.8), 4),
+  y = rep(c(0.2, 0.4, 0.6, 0.8), each = 4),
+  z = factor(rep(1:16))
+)
 
-p_modelos
+p_leyenda <- ggplot(df, aes(x, y)) +
+  geom_tile(aes(fill = z))+
+  scale_fill_manual(values = c(adjust_transparency('#DA7543', 
+                                                   alpha = c(.2, .4, .6, .8)), 
+                               adjust_transparency('#F9C93C', 
+                                                   alpha = c(.2, .4, .6, .8)), 
+                               adjust_transparency('#4B6E8E', 
+                                                   alpha = c(.2, .4, .6, .8)), 
+                               adjust_transparency('#6AB6AA', 
+                                                   alpha = c(.2, .4, .6, .8)))) +
+  coord_fixed(ratio = 1) +
+  scale_x_continuous(labels = c(0.2, 0.4, 0.6, 0.8), 
+                     breaks = c(0.2,0.4,0.6,0.8))+
+  scale_y_continuous(position = "right", 
+                     labels = c("B2", "B1", "A2", "A1"), 
+                     breaks = c(0.2,0.4,0.6,0.8))+
+  labs(x = "Probabilidad")+
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.x = element_text(vjust = 4),
+        axis.title.x = element_text(size = 11, 
+                                    color = "grey20", 
+                                    family = "roboto",
+                                    face = "bold"),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 11, 
+                                   color = "#c3beb8", 
+                                   family = "roboto",
+                                   face = "bold"))
+
+
+
+
+p_leyenda
 ```
 
-<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\06_TCI~1/figure-html/plot_models-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="C:\Users\cguio\DOCUME~1\Terrae\TCI_CE~1\_Git\Reportes\06_TCI~1/figure-html/plot_ley-1.png" width="80%" style="display: block; margin: auto;" />
+
+
+
 
 knnn predijo secuencias distribuídas sobre grandes áreas, mientras que rf predijo una distribución mas fina.
 
