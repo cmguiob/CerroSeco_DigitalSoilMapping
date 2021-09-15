@@ -64,7 +64,7 @@ sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSec
 
 #Select four profiles and relevant properties for plot
 hz4 <- hz %>%
-  dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04")) %>%
+  dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04", "CS07")) %>%
   dplyr::select(ID, BASE, TOPE, ESP, HZ, CON_POR, MX_H, MX_V, MX_C, CON_H, CON_V, CON_C, ARENA, LIMO, ARCILLA )
 
 #Cargar poligono CS como sf
@@ -210,7 +210,7 @@ p_localizaciones <- ggplot() +
   scale_color_manual(values= col_scp, 
                      name = "Secuencia tipo")+
   # Etiquetas de puntos
-  geom_text_repel( data = sitio_sf84[1:4,],   
+  geom_text_repel( data = sitio_sf84 %>% dplyr::filter(ID %in% c("CS01", "CS02", "CS03", "CS04","CS07")),   
                    aes(label = ID, geometry = geometry, col = SECUENCIA),
                    size = 3.5,
                    family = "robotoc",

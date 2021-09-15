@@ -50,7 +50,7 @@ hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_g
 sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
 
 #Select four profiles and relevant properties for plot
-hz4 <- hz[1:23,]
+hz5 <- hz[c(1:23,31:33),]
 
 ```
 
@@ -225,7 +225,7 @@ sty_c$axis.text$fontfamily = "robotoc"
 sty_p <- list()
 sty_p$strip.border$col <- NA
 sty_p$strip.background$col <- NA
-sty_p$superpose.line$col <- c('#6AB6AA', '#4B6E8E', '#DA7543', '#DA7543')
+sty_p$superpose.line$col <- c('#4B6E8E','#6AB6AA','#DA7543', '#DA7543', '#F9C93C')
 sty_p$superpose.line$lty <- c(1,1,1,2) #property lines
 sty_p$superpose.line$lwd <- 2.5
 sty_p$layout.heights$strip <-1.5
@@ -280,33 +280,33 @@ sty_p$axis.text$fontfamily = "robotoc"
 ```{r prep_plot}
 
 #Crear colección
-depths(hz4) <- ID ~ TOPE + BASE 
-site(hz4) <- sitio
+depths(hz5) <- ID ~ TOPE + BASE 
+site(hz5) <- sitio
 
 #Inicializar coordenadas
-coordinates(hz4) <- ~  long + lat
-aqp::proj4string(hz4) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
+coordinates(hz5) <- ~  long + lat
+aqp::proj4string(hz5) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
 
 #Crear grupos para perfiles hidro
-CShidro <- slab(hz4, fm= ID ~ ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + KSmedia_cmd )
+CShidro <- slab(hz5, fm= ID ~ ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + KSmedia_cmd )
 
-CShg <- make.groups(CS01 = CShidro[CShidro$ID == "CS01",], CS02 = CShidro[CShidro$ID == "CS02",], CS03 = CShidro[CShidro$ID== "CS03",], CS04 = CShidro[CShidro$ID== "CS04",])
+CShg <- make.groups(CS01 = CShidro[CShidro$ID == "CS01",], CS02 = CShidro[CShidro$ID == "CS02",], CS03 = CShidro[CShidro$ID== "CS03",], CS04 = CShidro[CShidro$ID== "CS04",], CS07 = CShidro[CShidro$ID== "CS07",])
 
 #Crear grupos para perfiles bio
-CSbio <- slab(hz4, fm= ID ~ K + CO + Ca_Mg_K + P + Si_OAA + CIC)
+CSbio <- slab(hz5, fm= ID ~ K + CO + Ca_Mg_K + P + Si_OAA + CIC)
 
-CSbg <- make.groups(CS01 = CSbio[CSbio$ID == "CS01",], CS02 = CSbio[CSbio$ID == "CS02",], CS03 = CSbio[CSbio$ID== "CS03",], CS04 = CSbio[CSbio$ID== "CS04",])
+CSbg <- make.groups(CS01 = CSbio[CSbio$ID == "CS01",], CS02 = CSbio[CSbio$ID == "CS02",], CS03 = CSbio[CSbio$ID== "CS03",], CS04 = CSbio[CSbio$ID== "CS04",],CS07 = CSbio[CSbio$ID== "CS07",])
 
 
 #Crear grupos para perfiles
-CSero <- slab(hz4, fm= ID ~ BT + SB + Na + Ca_Mg + CE + pH)
+CSero <- slab(hz5, fm= ID ~ BT + SB + Na + Ca_Mg + CE + pH)
 
-CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == "CS02",], CS03 = CSero[CSero$ID== "CS03",], CS04 = CSero[CSero$ID== "CS04",])
+CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == "CS02",], CS03 = CSero[CSero$ID== "CS03",], CS04 = CSero[CSero$ID== "CS04",], CS07 = CSero[CSero$ID== "CS07",])
 
 # Todas las propiedades de interés
-CSprops <- slab(hz4, fm= ID ~ K + CO + Ca_Mg_K + P + Si_OAA + CIC + BT + SB + Na + Ca_Mg + CE + pH + ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + KSmedia_cmd)
+CSprops <- slab(hz5, fm= ID ~ K + CO + Ca_Mg_K + P + Si_OAA + CIC + BT + SB + Na + Ca_Mg + CE + pH + ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + KSmedia_cmd)
 
-CSpg <- make.groups(CS01 = CSprops[CSprops$ID == "CS01",], CS02 = CSprops[CSprops$ID == "CS02",], CS03 = CSprops[CSprops$ID== "CS03",], CS04 = CSprops[CSprops$ID== "CS04",])
+CSpg <- make.groups(CS01 = CSprops[CSprops$ID == "CS01",], CS02 = CSprops[CSprops$ID == "CS02",], CS03 = CSprops[CSprops$ID== "CS03",], CS04 = CSprops[CSprops$ID== "CS04",], CS07 = CSprops[CSprops$ID== "CS07",])
 
 ```
 

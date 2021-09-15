@@ -2,7 +2,7 @@
 title: "TCI - Cerro Seco / Suelos"
 subtitle: "Localizaciones"
 author: "Carlos Guio"
-date: "2021-08-15"
+date: "2021-09-15"
 knit: (function(inputFile, encoding) { 
       out_dir <- 'Reportes';
       rmarkdown::render(input = inputFile,
@@ -98,7 +98,7 @@ p_localizaciones <- ggplot() +
   scale_color_manual(values= col_scp, 
                      name = "Secuencia tipo")+
   # Etiquetas de puntos
-  geom_text_repel( data = sitio_sf84[1:4,],   
+  geom_text_repel( data = sitio_sf84 %>% dplyr::filter(ID %in% c("CS01", "CS02", "CS03", "CS04","CS07")),   
                    aes(label = ID, geometry = geometry, col = SECUENCIA),
                    size = 3.5,
                    family = "robotoc",
