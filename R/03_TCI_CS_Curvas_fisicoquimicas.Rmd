@@ -62,7 +62,7 @@ hz4 <- hz[1:23,]
   
 #vars_rosetta <- names(hz4_temp)[3:5]
 
-# ksat está en log10 de cm/dia
+#ksat está en log10 de cm/dia
 #res_rosetta <- ROSETTA(hz4_temp, vars = vars_rosetta, v = '3') 
 
 #hz4 <- left_join(hz4, 
