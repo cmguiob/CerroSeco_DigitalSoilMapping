@@ -45,9 +45,9 @@ showtext_auto()
 ```{r prep_data}
 
 # Cargar datos de perfiles
-hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
+hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/CerroSeco_DigitalSoilMapping/main/Datos/Suelos_CS_Horiz.csv')
 
-sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Sitio.csv')
+sitio <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/CerroSeco_DigitalSoilMapping/main/Datos/Suelos_CS_Sitio.csv')
 
 #Select four profiles and relevant properties for plot
 hz5 <- hz[c(1:23,31:33),]
@@ -288,7 +288,7 @@ coordinates(hz5) <- ~  long + lat
 aqp::proj4string(hz5) <- '+init=epsg:4326 +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
 
 #Crear grupos para perfiles hidro
-CShidro <- slab(hz5, fm= ID ~ ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + KSmedia_cmd )
+CShidro <- slab(hz5, fm= ID ~ ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + Ks_ROSSETA )
 
 CShg <- make.groups(CS01 = CShidro[CShidro$ID == "CS01",], CS02 = CShidro[CShidro$ID == "CS02",], CS03 = CShidro[CShidro$ID== "CS03",], CS04 = CShidro[CShidro$ID== "CS04",], CS07 = CShidro[CShidro$ID== "CS07",])
 
@@ -304,7 +304,7 @@ CSero <- slab(hz5, fm= ID ~ BT + SB + Na + Ca_Mg + CE + pH)
 CSeg <- make.groups(CS01 = CSero[CSero$ID == "CS01",], CS02 = CSero[CSero$ID == "CS02",], CS03 = CSero[CSero$ID== "CS03",], CS04 = CSero[CSero$ID== "CS04",], CS07 = CSero[CSero$ID== "CS07",])
 
 # Todas las propiedades de interés
-CSprops <- slab(hz5, fm= ID ~ K + CO + Ca_Mg_K + P + Si_OAA + CIC + BT + SB + Na + Ca_Mg + CE + pH + ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + KSmedia_cmd)
+CSprops <- slab(hz5, fm= ID ~ K + CO + Ca_Mg_K + P + Si_OAA + CIC + BT + SB + Na + Ca_Mg + CE + pH + ARENA + LIMO + ARCILLA + Fe_DCS + DENS_AP + Ks_ROSSETA)
 
 CSpg <- make.groups(CS01 = CSprops[CSprops$ID == "CS01",], CS02 = CSprops[CSprops$ID == "CS02",], CS03 = CSprops[CSprops$ID== "CS03",], CS04 = CSprops[CSprops$ID== "CS04",], CS07 = CSprops[CSprops$ID== "CS07",])
 
