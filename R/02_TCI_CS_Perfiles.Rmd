@@ -48,8 +48,8 @@ showtext_auto()
 hz <- readr::read_csv('https://raw.githubusercontent.com/cmguiob/TCI_CerroSeco_git/main/Datos/Suelos_CS_Horiz.csv')
 
 #Select four profiles and relevant properties for plot
-hz4 <- hz %>%
-  dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04")) %>%
+hz5 <- hz %>%
+  dplyr::filter(ID %in% c("CS01", "CS02","CS03","CS04", "CS07")) %>%
   dplyr::select(ID, BASE, TOPE, ESP, HZ, CON_POR, MX_H, MX_V, MX_C, CON_H, CON_V, CON_C, ARENA, LIMO, ARCILLA )
 
 ```
@@ -98,18 +98,18 @@ Los cuatro perfiles estudiados en detalle se presentan como modelos con propieda
 ```{r prep2}
 
 # Create color variables
-hz4$RGBmx <- munsell2rgb(hz4$MX_H, hz4$MX_V, hz4$MX_C)
-hz4$RGBco <-munsell2rgb(hz4$CON_H,hz4$CON_V , hz4$CON_C)
+hz5$RGBmx <- munsell2rgb(hz5$MX_H, hz5$MX_V, hz5$MX_C)
+hz5$RGBco <-munsell2rgb(hz5$CON_H,hz5$CON_V , hz5$CON_C)
 
 #Factor horizons to order
-hz_bdf <- hz4 %>%
+hz_bdf <- hz5 %>%
   dplyr::mutate(ID_HZ = paste(ID, HZ), #this orders by rownumber
          ID_HZ2 = factor(ID_HZ, ID_HZ)) %>%
   rowwise() %>%
   dplyr::mutate(GRUESOS = sum(ARENA,LIMO))%>%
   dplyr::mutate(GRANU_TOT = sum(ARENA + LIMO + ARCILLA))
   
-hz_jdf <-  hz4 %>%
+hz_jdf <-  hz5 %>%
   dplyr::mutate(ID = factor(ID),
          ID_HZ = paste(ID, HZ), 
          ID_HZ2 = factor(ID_HZ, ID_HZ))%>% #order by rwonumber
