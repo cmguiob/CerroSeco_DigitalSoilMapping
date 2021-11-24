@@ -19,12 +19,12 @@ This study aimed to create a preliminary map of ancient soil (paleosol) sequence
 ## Study locations · *Ubicaciones de estudio*
   ![Location Cerro Seco](Graficas/localizaciones.png)
  
-## Model profiles of paleosol/hydropedologic sequences
+## Model profiles of paleosol/hydropedologic sequences *Modelos de perfiles de suelo*
 ![Perfiles](Graficas/perfiles.png)
  
- ## Random Forest Importance of indices derived from RS
+ ## Random Forest Importance of remote sensing-derived indices *Importancia de índices*
  ![Importancia](Graficas/importancia_rf_variables.png)
  
- ## Preliminary models
+ ## Preliminary sequence distribution models *Modelos preliminares de distribución de secuencias*
  ![Modelos](Graficas/mapas_modelos.png)
  
