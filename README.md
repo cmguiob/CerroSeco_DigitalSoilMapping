@@ -19,7 +19,7 @@ This study aims to create a preliminary map of soil (paleosol) sequence distribu
 ## Study locations · *Ubicaciones de estudio*
   ![Location Cerro Seco](Graficas/localizaciones.png)
  
-## Model profiles of paleosoil/hydropedologic sequences
+## Model profiles of paleosol/hydropedologic sequences
 ![Perfiles](Graficas/perfiles.png)
  
  ## Random Forest Importance of indices derived from RS
