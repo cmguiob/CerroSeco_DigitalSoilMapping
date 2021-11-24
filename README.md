@@ -19,3 +19,11 @@ This study aims to create a preliminary map of soil (paleosol) sequence distribu
 ## Study locations · *Ubicaciones de estudio*
   ![Location Cerro Seco](Graficas/localizaciones.png)
  
+ 
+ 
+ ## Importance of indices derived from RS
+ 
+ 
+ ## Preliminary models
+ 
+ 
