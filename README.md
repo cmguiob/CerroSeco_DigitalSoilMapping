@@ -22,8 +22,8 @@ This study aims to create a preliminary map of soil (paleosol) sequence distribu
  
  
  ## Random Forest Importance of indices derived from RS
- ![Importance](Graficas/importancia_rf_variables.png)
+ ![Importancia](Graficas/importancia_rf_variables.png)
  
  ## Preliminary models
- 
+ ![Modelos](Graficas/mapas_modelos.png)
  
